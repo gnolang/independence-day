@@ -14,3 +14,31 @@
 #    awk 'BEGIN{FS=OFS=","} {it=$NF; NF--
 #    	 if (max[$2]<it) {max[$2]=it; res[$2]=$0}}
 #         END {for (i in max) print res[i]}' | sort -k 1,1 > votes-unique.csv
+
+(
+    echo "# Prop69 Snapshot"
+    echo
+    echo "## Total votes"
+    echo
+    echo '```'
+    wc -l votes.csv
+    echo '```'
+    echo
+    echo "## Total unique voters"
+    echo
+    echo '```'
+    wc -l votes-unique.csv
+    echo '```'
+    echo
+    echo "## votes per option"
+    echo
+    echo '```'
+    cat votes-unique.csv | cut -d, -f3 | sort | uniq -c | sort -n
+    echo '```'
+    echo "## First and last votes per date"
+    echo
+    echo '```'
+    head -n 1 votes.csv
+    tail -n 1 votes.csv
+    echo '```'
+) | tee README.md
