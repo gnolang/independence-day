@@ -3,22 +3,22 @@
 ## Total votes
 
 ```
-110864 votes.csv
+110937 votes.csv
 ```
 
 ## Total unique voters
 
 ```
-90047 votes-unique.csv
+90073 votes-unique.csv
 ```
 
 ## votes per option
 
 ```
-   2663 VOTE_OPTION_ABSTAIN
-  12026 VOTE_OPTION_YES
+   2664 VOTE_OPTION_ABSTAIN
+  12025 VOTE_OPTION_YES
   28584 VOTE_OPTION_NO_WITH_VETO
-  46774 VOTE_OPTION_NO
+  46800 VOTE_OPTION_NO
 ```
 ## First and last votes per date
 
