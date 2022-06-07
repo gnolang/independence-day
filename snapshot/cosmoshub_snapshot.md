@@ -1,5 +1,7 @@
 # Getting the 5/20 snapshot of Cosmoshub-4
 
+## Syncing a full node:
+
 From schultzie|Lavender.Five Nodes:
 
 ```bash
@@ -56,3 +58,14 @@ EOF
 sudo systemctl daemon-reload && systemctl enable gaiad
 sudo systemctl restart gaiad && journalctl -fu gaiad
 ```
+
+## Exporting state:
+
+From 0xAN|Nodes.Guru:
+
+```bash
+gaiad export --height=10562840 --home $HOME/.gaia/ &> cosmos_10562840_genesis.json
+cat cosmos_10562840_genesis.json | jq .app_state.auth.accounts[].address | sed 's/"//g' > cosmos_10562840_genesis_addresses.json
+```
+
+NOTE: the above sed filter doesn't print the account balances.
