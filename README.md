@@ -1,10 +1,10 @@
 # independance-day
 
 The 5/20 export data is 
-[https://test1.gno.land/static/cosmos_10562840_export.json](here) (beware, large file).
+[here](https://test1.gno.land/static/cosmos_10562840_export.json) (beware, large file).
 
 Please try to replicate this yourself, if you have a full node.
-The instructions can be found [./snapshot/cosmoshub_snapshot.md](here). #BOUNTY
+The instructions can be found [here](./snapshot/cosmoshub_snapshot.md). #BOUNTY
 
 ## plan
 
