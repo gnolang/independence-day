@@ -1,4 +1,4 @@
-# independance-day
+# independence-day
 
 The 5/20 export data is 
 [here](https://test1.gno.land/static/cosmos_10562840_export.json) (beware, large file).
