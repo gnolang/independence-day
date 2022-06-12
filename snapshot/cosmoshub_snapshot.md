@@ -24,8 +24,8 @@ go version
 # update this before running
 git clone https://github.com/cosmos/gaia
 cd gaia
-git checkout
-make install v7.0.0
+git checkout v7.0.0
+make install
 
 cd ~/.gaiad/config
 wget https://quicksync.io/addrbook.cosmos.json
