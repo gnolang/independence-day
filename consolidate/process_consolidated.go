@@ -62,7 +62,7 @@ func main() {
 
 		if gnot > 0 {
 
-			fmt.Printf("%s:%d\n", gnoAddress, gnot)
+			fmt.Printf("%s=%dgnot\n", gnoAddress, gnot)
 		}
 	}
 }
