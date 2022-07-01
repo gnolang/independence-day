@@ -23,22 +23,99 @@ func TestConvertAddress(t *testing.T) {
 
 	ledger, err = convertAddress(ledger_address_gno)
 	assert.Error(t, err)
+
+	//TODO: test multisig convertion
+}
+
+var a1 = Account{
+	Address: "cosmos1fupfatmln5844rjafzp6d2vc825vav2xe277uu",
+	Coins: []Coin{
+		{Amount: "455794000000", Denom: "uatom"},
+		{Amount: "5083895000000", Denom: "duatom"},
+	},
+	Vote: "{\"option\":1,\"weight\":\"1.000000000000000000\"}",
+}
+
+var a2 = Account{
+	Address: "cosmos1fz9nhh7upfn9sv02f3ck4zsu8uqaesmupv6pv2",
+	Coins: []Coin{
+		{Amount: "455794000000", Denom: "uatom"},
+		{Amount: "5083895000000", Denom: "duatom"},
+	},
+	Vote: "{\"option\":3,\"weight\":\"1.000000000000000000\"}",
+}
+
+var a3 = Account{
+	Address: "cosmos1zzzyklkaqafpe8200y7y6y3u9a3cehkr223223",
+	Coins: []Coin{
+		{Amount: "1", Denom: "uatom"},
+	},
+	Vote: "",
+}
+
+var a4 = Account{
+	Address: "cosmos1zzzyklkaqafpe8200y7y6y3u9a3cehkr223223",
+	Coins: []Coin{
+		{Amount: "1", Denom: "uatom"},
+	},
+	Vote: "",
+}
+
+func TestQualify(t *testing.T) {
+	// one
+	var accounts = []Account{a1}
+
+	dist, totalWeight := qualify(accounts)
+
+	assert.Equal(t, 455794000000, dist[0].Weight)
+	assert.Equal(t, 455794000000, totalWeight)
+
+	//two
+	accounts = append(accounts, a2)
+
+	dist, totalWeight = qualify(accounts)
+
+	assert.Equal(t, 455794000000, dist[0].Weight)
+	assert.Equal(t, 8081636500000, dist[1].Weight)
+	assert.Equal(t, 8537430500000, totalWeight)
+
 }
 
 func TestDistribute(t *testing.T) {
 
-	vote := "{\"option\":1,\"weight\":\"1.000000000000000000\"}"
-	uatoms := 5083895 + 455794
-	duatoms := 5083895
+	var accounts = []Account{a1}
 
-	// test >0.5 round up
-	assert.Equal(t, 6, distribute(vote, duatoms, uatoms))
+	dist, totalWeight := qualify(accounts)
+	dist = distribute(dist, totalWeight)
+	// get entire distribution
+	assert.Equal(t, 455794000000, dist[0].Weight)
+	assert.Equal(t, int64(TOTAL_AIRDROP), dist[0].Gnot.RoundInt64())
 
-	vote = "{\"option\":1,\"weight\":\"1.000000000000000000\"}"
-	uatoms = 5083895
-	duatoms = 0
+	//  a portion
 
-	// test not delegation no distribution
-	assert.Equal(t, 0, distribute(vote, duatoms, uatoms))
+	accounts = append(accounts, a2)
+	dist, totalWeight = qualify(accounts)
+	dist = distribute(dist, totalWeight)
+
+	assert.Equal(t, 455794000000, dist[0].Weight)
+	assert.Equal(t, 8081636500000, dist[1].Weight)
+	assert.Equal(t, 8537430500000, totalWeight)
+
+	assert.Equal(t, int64(45379567), dist[0].Gnot.RoundInt64())
+	assert.Equal(t, int64(804620433), dist[1].Gnot.RoundInt64())
+
+	// tiny portion
+	accounts = append(accounts, a3)
+	dist, totalWeight = qualify(accounts)
+	dist = distribute(dist, totalWeight)
+
+	assert.Equal(t, 455794000000, dist[0].Weight)
+	assert.Equal(t, 8081636500000, dist[1].Weight)
+	assert.Equal(t, 1, dist[2].Weight)
+	assert.Equal(t, 8537430500001, totalWeight)
+
+	assert.Equal(t, "45379567.072312286150000000", dist[0].Gnot.String())
+	assert.Equal(t, "804620432.927588151650000000", dist[1].Gnot.String())
+	assert.Equal(t, "0.000099561350000000", dist[2].Gnot.String())
 
 }
