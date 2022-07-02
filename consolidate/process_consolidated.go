@@ -27,13 +27,13 @@ type Distribution struct {
 	Account    Account   `json:"account"`
 	GnoAddress string    `json:"gno_address"`
 	Weight     int       `json:"weight"`
-	Gnot       types.Dec `json:"gnot"`
+	Ugnot      types.Dec `json:"ugnot"`
 }
 
-//total gnot 1,000,000,000
-//Air drop 85%
+//total 1,000,000,000 gnot
+//Air drop 90%
 
-const TOTAL_AIRDROP = 850000000
+const TOTAL_AIRDROP = 900000000
 
 func main() {
 
@@ -53,8 +53,11 @@ func main() {
 	dist = distribute(dist, totalWeight)
 
 	for _, d := range dist {
+		ugnot := whole(d.Ugnot.String())
 
-		fmt.Printf("%s=%dgnot\n", d.GnoAddress, d.Gnot)
+		if ugnot != "0" {
+			fmt.Printf("%s:%s=%sugnot\n", d.Account.Address, d.GnoAddress, ugnot)
+		}
 
 	}
 
@@ -120,7 +123,7 @@ func qualify(accounts []Account) ([]Distribution, int) {
 			Account:    a,
 			GnoAddress: gnoAddress,
 			Weight:     w,
-			Gnot:       types.ZeroDec(),
+			Ugnot:      types.ZeroDec(),
 		}
 
 		dist = append(dist, d)
@@ -136,8 +139,8 @@ func qualify(accounts []Account) ([]Distribution, int) {
 
 func distribute(dist []Distribution, totalWeight int) []Distribution {
 
-	tw := types.NewDec(int64(totalWeight))
-	ta := types.NewDec(int64(TOTAL_AIRDROP))
+	tWeight := types.NewDec(int64(totalWeight))
+	tAirdrop := types.NewDec(int64(TOTAL_AIRDROP))
 
 	for i, d := range dist {
 
@@ -146,8 +149,9 @@ func distribute(dist []Distribution, totalWeight int) []Distribution {
 
 		// propostional
 		w := types.NewDec(int64(d.Weight))
-		gnot := w.Quo(tw).Mul(ta)
-		d.Gnot = gnot
+		gnot := w.Quo(tWeight).Mul(tAirdrop)
+		ugnot := gnot.Mul(types.NewDec(int64(1000000)))
+		d.Ugnot = ugnot
 		dist[i] = d
 
 	}
