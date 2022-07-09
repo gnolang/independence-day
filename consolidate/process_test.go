@@ -1,7 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"github.com/cosmos/cosmos-sdk/types"
+	osm "github.com/gnolang/gno/pkgs/os"
 	"github.com/stretchr/testify/assert"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -81,7 +86,7 @@ func TestDistribute(t *testing.T) {
 	dist = distribute(dist, totalWeight)
 	// get entire distribution
 	assert.Equal(t, 455794000000, dist[0].Weight)
-	assert.Equal(t, int64(TOTAL_AIRDROP*1000000), dist[0].Ugnot.RoundInt64())
+	assert.Equal(t, "455794000000", whole(dist[0].Ugnot.String()))
 
 	//  a portion
 
@@ -92,8 +97,8 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 455794000000, dist[0].Weight)
 	assert.Equal(t, 8081636500000, dist[1].Weight)
 	assert.Equal(t, 8537430500000, totalWeight)
-	assert.Equal(t, "48048953370689", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "851951046629310", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "455794000000", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "8081636500000", whole(dist[1].Ugnot.String()))
 
 	// tiny portion
 	accounts = append(accounts, a3)
@@ -105,8 +110,43 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 1, dist[2].Weight)
 	assert.Equal(t, 8537430500001, totalWeight)
 
-	assert.Equal(t, "48048953370683", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "851951046629210", whole(dist[1].Ugnot.String()))
-	assert.Equal(t, "105", whole(dist[2].Ugnot.String()))
+	assert.Equal(t, "455794000000", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "8081636500000", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "1", whole(dist[2].Ugnot.String()))
+
+}
+func TestTotal(t *testing.T) {
+
+	bz := osm.MustReadFile("genbalance.txt")
+
+	line := strings.TrimSuffix(string(bz), "\n")
+
+	balances := strings.Split(line, "\n")
+
+	sum := types.ZeroDec()
+
+	for _, v := range balances {
+		//cosmos10008uvk6fj3ja05u092ya5sx6fn355wavael4j:g10008uvk6fj3ja05u092ya5sx6fn355walp9u5k=3204884ugnot
+		//split and drop cosmos address
+		a := strings.Split(v, ":")
+		parts := strings.Split(a[1], "=")
+		if len(parts) != 2 {
+
+			fmt.Printf("error in parsing: %v\n", parts)
+		}
+
+		amount := strings.TrimSuffix(parts[1], "ugnot")
+
+		amount_i, err := strconv.Atoi(amount)
+
+		if err != nil {
+			panic(err)
+		}
+
+		amount_dec := types.NewDec(int64(amount_i))
+		sum = sum.Add(amount_dec)
+
+	}
+	assert.Equal(t, "300145508239404.000000000000000000", sum.String())
 
 }
