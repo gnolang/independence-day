@@ -84,9 +84,9 @@ func TestDistribute(t *testing.T) {
 
 	dist, totalWeight := qualify(accounts)
 	dist = distribute(dist, totalWeight)
-	// get entire distribution
+	// get entire distribution, TOTAL_AIRDROP = 750Mgnot
 	assert.Equal(t, 455794000000, dist[0].Weight)
-	assert.Equal(t, "455794000000", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, int64(TOTAL_AIRDROP*1000000), dist[0].Ugnot.RoundInt64())
 
 	//  a portion
 
@@ -97,8 +97,8 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 455794000000, dist[0].Weight)
 	assert.Equal(t, 8081636500000, dist[1].Weight)
 	assert.Equal(t, 8537430500000, totalWeight)
-	assert.Equal(t, "455794000000", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "8081636500000", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "40040794475574", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "709959205524425", whole(dist[1].Ugnot.String()))
 
 	// tiny portion
 	accounts = append(accounts, a3)
@@ -110,9 +110,9 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 1, dist[2].Weight)
 	assert.Equal(t, 8537430500001, totalWeight)
 
-	assert.Equal(t, "455794000000", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "8081636500000", whole(dist[1].Ugnot.String()))
-	assert.Equal(t, "1", whole(dist[2].Ugnot.String()))
+	assert.Equal(t, "40040794475569", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "709959205524342", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "87", whole(dist[2].Ugnot.String()))
 
 }
 func TestTotal(t *testing.T) {
@@ -147,6 +147,7 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 
 	}
-	assert.Equal(t, "300145508239404.000000000000000000", sum.String())
+
+	assert.Equal(t, "749999999663089.000000000000000000", sum.String())
 
 }

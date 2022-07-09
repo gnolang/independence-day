@@ -30,6 +30,11 @@ type Distribution struct {
 	Ugnot      types.Dec `json:"ugnot"`
 }
 
+//total 1,000,000,000 gnot
+//Air drop 75%
+
+const TOTAL_AIRDROP = 750000000
+
 func main() {
 
 	bz, err := ioutil.ReadFile("snapshot_consolidated_10562840.json")
@@ -134,26 +139,26 @@ func qualify(accounts []Account) ([]Distribution, int) {
 
 func distribute(dist []Distribution, totalWeight int) []Distribution {
 
-	//tWeight := types.NewDec(int64(totalWeight))
-	//tAirdrop := types.NewDec(int64(TOTAL_AIRDROP))
+	tWeight := types.NewDec(int64(totalWeight))
+	tAirdrop := types.NewDec(int64(TOTAL_AIRDROP))
 
 	for i, d := range dist {
-
-		// 1:1 mapping between weight and Ugnot token. It is easy to verify by users.
-		// they don't need know total and percentage to know their own numebr based on rules.
-
-		ugnot := types.NewDec(int64(d.Weight))
-		d.Ugnot = ugnot
-		dist[i] = d
-
-		// propostional
 		/*
+			// 1:1 mapping between weight and Ugnot token. It is easy to verify by users.
+			// they don't need know total and percentage to know their own numebr based on rules.
 
-			gnot := w.Quo(tWeight).Mul(tAirdrop)
-			ugnot := gnot.Mul(types.NewDec(int64(1000000)))
+			ugnot := types.NewDec(int64(d.Weight))
 			d.Ugnot = ugnot
 			dist[i] = d
+
 		*/
+
+		// propostional
+		w := types.NewDec(int64(d.Weight))
+		gnot := w.Quo(tWeight).Mul(tAirdrop)
+		ugnot := gnot.Mul(types.NewDec(int64(1000000)))
+		d.Ugnot = ugnot
+		dist[i] = d
 
 	}
 
