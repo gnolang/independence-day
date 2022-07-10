@@ -11,6 +11,16 @@
 752454999gnot
 ```
 
+## duplicate accounts
+```
+g13278z0a5ufeg80ffqxpda9dlp599t7ekregcy6=1000000000ugnot 
+g13278z0a5ufeg80ffqxpda9dlp599t7ekregcy6=90513ugnot
+g14da4n9hcynyzz83q607uu8keuh9hwlv42ra6fa=100000000000ugnot 
+g14da4n9hcynyzz83q607uu8keuh9hwlv42ra6fa=2498788034ugnot
+g1j80fpcsumfkxypvydvtwtz3j4sdwr8c2u0lr64=1000000000ugnot 
+g1j80fpcsumfkxypvydvtwtz3j4sdwr8c2u0lr64=53522690ugnot
+```
+
 ## top 100 accounts
 ```
 g1p3ucd3ptpw902fluyjzhq3ffgq4ntddatev7s5=42027010477582ugnot
