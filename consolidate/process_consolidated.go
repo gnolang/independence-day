@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"strconv"
+	"strings"
+
 	"github.com/gnolang/gno/pkgs/bech32"
 	"github.com/gnolang/gno/pkgs/crypto"
 
 	"github.com/cosmos/cosmos-sdk/types"
-
-	"io/ioutil"
-	"strconv"
-	"strings"
 )
 
 type Account struct {
@@ -18,6 +18,7 @@ type Account struct {
 	Coins   []Coin `json:"coins"`
 	Vote    string `json:"vote"`
 }
+
 type Coin struct {
 	Amount string `json:"amount"`
 	Denom  string `json:"denom"`
@@ -30,19 +31,18 @@ type Distribution struct {
 	Ugnot      types.Dec `json:"ugnot"`
 }
 
-//total 1,000,000,000 gnot
-//Air drop 75%
+// total 1,000,000,000 gnot
+// Air drop 75%
 
 const TOTAL_AIRDROP = 750000000
 
 func main() {
-
 	bz, err := ioutil.ReadFile("snapshot_consolidated_10562840.json")
 	if err != nil {
 		panic(err)
 	}
 
-	var accounts = []Account{}
+	accounts := []Account{}
 
 	err = json.Unmarshal(bz, &accounts)
 	if err != nil {
@@ -60,7 +60,6 @@ func main() {
 		}
 
 	}
-
 }
 
 // drops decimals
@@ -76,7 +75,6 @@ func whole(s string) string {
 // assign weight as uatom to each account and return the total weight
 
 func qualify(accounts []Account) ([]Distribution, int) {
-
 	dist := []Distribution{}
 
 	total := 0
@@ -100,7 +98,6 @@ func qualify(accounts []Account) ([]Distribution, int) {
 				uatoms = amount_i
 			case "duatom":
 				amount_i, err := strconv.Atoi(amount)
-
 				if err != nil {
 					panic(err)
 				}
@@ -114,7 +111,6 @@ func qualify(accounts []Account) ([]Distribution, int) {
 
 		w := weight(a.Vote, uatoms, duatoms)
 		gnoAddress, err := convertAddress(a.Address)
-
 		if err != nil {
 			panic(err)
 		}
@@ -134,11 +130,9 @@ func qualify(accounts []Account) ([]Distribution, int) {
 	}
 
 	return dist, total
-
 }
 
 func distribute(dist []Distribution, totalWeight int) []Distribution {
-
 	tWeight := types.NewDec(int64(totalWeight))
 	tAirdrop := types.NewDec(int64(TOTAL_AIRDROP))
 
@@ -163,7 +157,6 @@ func distribute(dist []Distribution, totalWeight int) []Distribution {
 	}
 
 	return dist
-
 }
 
 //  VOTE_OPTION_UNSPECIFIED = 0;
@@ -173,32 +166,27 @@ func distribute(dist []Distribution, totalWeight int) []Distribution {
 //  VOTE_OPTION_NO_WITH_VETO = 4;
 
 func weight(vote string, uatom int, duatom int) int {
-
 	weight := 0
 	// rules for voting option
-	if strings.Contains(vote, "\"option\":1") { //YES on Pro69
+	if strings.Contains(vote, "\"option\":1") { // YES on Pro69
 
 		duatom = 0
-
-	} else if strings.Contains(vote, "\"option\":4") { //NO_WITH_VETO  on Pro69
+	} else if strings.Contains(vote, "\"option\":4") { // NO_WITH_VETO  on Pro69
 
 		duatom = duatom * 2
-
-	} else if strings.Contains(vote, "\"option\":3") { //NO on Pro69
+	} else if strings.Contains(vote, "\"option\":3") { // NO on Pro69
 
 		duatom = duatom + duatom>>1 //  * 1.5
-
 	} else { // ABSTAIN, UNSPECIFIED, No voting options.
 
 		// do nothing, they have the same weight as the delegated uatom.
-
 	}
 
 	weight = uatom + duatom
 
 	return weight
-
 }
+
 func convertAddress(cosmosAddress string) (string, error) {
 	// To debug, we can comment out this section and just return cosmos address
 
@@ -214,11 +202,9 @@ func convertAddress(cosmosAddress string) (string, error) {
 	}
 
 	return gnoAddress, nil
-
 }
 
 func skip(address string) bool {
-
 	//identify  and skip module account
 	/*
 	   cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh: 184285143502836 uatom
@@ -235,13 +221,10 @@ func skip(address string) bool {
 	}
 
 	for _, v := range module {
-
 		if address == v {
-
 			return true
 		}
 	}
 
 	return false
-
 }
