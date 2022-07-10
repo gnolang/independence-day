@@ -32,6 +32,12 @@ README.md: balances.txt
 	echo '```' >> $@.tmp
 	echo >> $@.tmp
 
+	echo "## duplicate accounts" >> $@.tmp
+	echo '```' >> $@.tmp
+	for addr in `cat balances.txt | cut -d= -f1 | sort | uniq -c  | grep -vE ' 1 ' | awk '{print $$2}'`; do grep $$addr balances.txt; done >> $@.tmp
+	echo '```' >> $@.tmp
+	echo >> $@.tmp
+
 	echo "## top 100 accounts" >> $@.tmp
 	echo '```' >> $@.tmp
 	head -n 100 balances.txt >> $@.tmp
