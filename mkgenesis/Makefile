@@ -11,7 +11,7 @@ balances.txt: non-airdrop.txt ../consolidate/genbalance.txt.gz
 	> $@.tmp
 	cat non-airdrop.txt | cut -d'#' -f1 | grep -vE '^\s*$$' >> $@.tmp
 	zcat ../consolidate/genbalance.txt.gz | cut -d: -f2 >> $@.tmp
-	cat $@.tmp  | sort -t = -k 2 -n -r > $@
+	cat $@.tmp  | sed 's/=/ /;s/ugnot//' | gawk '{seen[$$1] += $$2 } END {for (i in seen) printf "%s=%dugnot\n", i,seen[i]  }'   |sort -t = -k 2 -n -r > $@ 
 	rm -f $@.tmp
 
 README.md: balances.txt
