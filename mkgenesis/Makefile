@@ -1,4 +1,4 @@
-all: balances.txt.gz README.md clean
+all: balances.txt.gz README.md
 
 re: clean all
 
