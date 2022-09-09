@@ -12,7 +12,27 @@ SUMMARIES = summaries/account_numbers.txt summaries/uatom_holders.csv \
 	summaries/undelegations.csv summaries/undelegations_grouped.csv \
 	summaries/undelegations_sum_and_count.txt
 
-all: base summaries sums
+all: base summaries sums build-sqlite
+
+##
+## Sqlite
+##
+
+build-sqlite: summaries
+	./build-sqlite.sh
+.PHONY: build-sqlite
+
+run-sqlite: db.sqlite
+	sqlite3 $<
+.PHONY: run-sqlite
+
+compute-sqlite: db.sqlite
+	echo "SELECT * FROM uatom_holders LIMIT 10" | sqlite3 $<
+.PHONY: compute-sqlite
+
+db.sqlite:
+	@make build-sqlite
+
 
 ##
 ## Summaries
