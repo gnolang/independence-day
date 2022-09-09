@@ -11,6 +11,7 @@ SUMMARIES = summaries/account_numbers.txt summaries/uatom_holders.csv \
 	summaries/delegations_grouped.csv summaries/delegations_sum_and_count.txt \
 	summaries/undelegations.csv summaries/undelegations_grouped.csv \
 	summaries/undelegations_sum_and_count.txt
+EXPORTS = exports/top10000.csv
 
 all: base summaries sums build-sqlite
 
@@ -26,11 +27,13 @@ run-sqlite: db.sqlite
 	sqlite3 $<
 .PHONY: run-sqlite
 
-compute-sqlite: db.sqlite
-	echo "SELECT * FROM uatom_holders LIMIT 10" | sqlite3 $<
+$(EXPORTS):
+	@make export-sqlite
+export-sqlite: db.sqlite
+	./export-sqlite.sh
 .PHONY: compute-sqlite
 
-db.sqlite:
+db.sqlite: skip.csv
 	@make build-sqlite
 
 
@@ -40,7 +43,7 @@ db.sqlite:
 
 sums: shasums.txt
 .PHONY: sums
-shasums.txt: $(JSON_FOCUSES) $(SUMMARIES)
+shasums.txt: $(JSON_FOCUSES) $(SUMMARIES) $(EXPORTS)
 	sha1sum */*.* | tee shasums.txt
 
 summaries: $(SUMMARIES)
