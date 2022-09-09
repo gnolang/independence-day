@@ -1,0 +1,54 @@
+As I already wrote in the comments under https://gist.github.com/moul/b1eab022e24eafa5a158d32ac6f24ab7
+"There were some very strange addresses with a lot of Atoms but no tx history on Github, some were clearly airdrop hunters."
+I decided to have another look at the list of these 50 highest airdrop receivers and write down my findings.
+I started from 50 and worked my way up. Some addresses looked very normal and are not on this file.
+"Maybe you want to do something about it, maybe not."
+,,
+acc_address,Atoms on 09.09.2022,Comment
+cosmos1eghtsjlwkghnayp8006l65xnu8p62l7v2sjqyj,576352.457640,Nothing staked-Constant large tx's
+cosmos1tlsky8ega2e0xvnzl0j6hsmch7ygz22qq250e2,649062.419453,Everything delegated with SG-1 - Last tx 9 months ago
+cosmos1r4q6lwhjlh5xpvsh08r02cwunzpejg60mcwn4k,0.000000,
+cosmos13wddek9f98equjehldud0k87q2fhjw2ar626f4,457367.444496,Everything delegated with P2P - Voted NO on prop69 - Never voted otherwhise
+cosmos12u0htv0zlpayct053qrq9a9shkxzdpsrrq4w2t,0.000000,
+cosmos1n30va735emp9uv6de4uvvfkv0ednm4au6m28mk,737648.685293,Delegated with Liqee and dFORCE
+cosmos1t5u0jfg3ljsjrh2m9e47d4ny2hea7eehxrzdgd,371010.034486,Coinbase #06
+cosmos1m5fhvl6w4u968wxnpvw2rplt758uw6ft3g6azu,700085.337548,Everything staked with OKEx Pool
+cosmos1c0829zzzlm7lujdf8nn3mrhmg9zjugqnrrtzdg,759940.734405,
+cosmos1ulwgf9ly9kq2le5fgupvyd00wqym88xtju6g47,562830.632080,Delegated with Sikka (Sunny) and iqlusion (Zaki)
+cosmos1ztqtanyrtn72z3fdjp5d0ysllf5zlmmvfy80at,0.000000,
+cosmos1wuq2vzkxx7tmawklwr9swfq5hgu9r0wpajyvsk,804032.609419,Everything delegated with Sugerselfdelegation
+cosmos16r39ghhwqjcwxa8q3yswlz8jhzldygy6jhvt3c,0.009134,Last transaction on Mintscan 3 years ago
+cosmos1nynns8ex9fq6sjjfj8k79ymkdz4sqth06xexae,931314.111917,No delegations
+cosmos1ga6hy630ejh2s8p2kvql4jxjt6fcnj0nl5vjqu,345022.165686,Delegated to Chorus One
+cosmos12lunp64clnm4nd74uhv3mghg509tz05uvew3yq,1066142.576005,Delegated to DACM
+cosmos1yeygh0y8rfyufdczhzytcl3pehsnxv9d3wsnlg,1200746.686210,Delegated to InfStones
+cosmos1f70nsqtq0wcd0kymq79ca2p0k5napnm6yqc94x,978369.074684,Delegated to Chorus One
+cosmos1q4xrgp7uluenws5dflmy7y7wlwcnerwzx4numj,753437.406242,Delegations spread over 7 big validators
+cosmos1uer4mwcq2vlt8l23ncwyjj70mug5pzx82cvlyw,1044573.485576,Delegated with KUCOIN
+cosmos1fj9lz9v2ncmftmwv79n8rqk3f20ymkgk7mlz7s,585207.210962,Everything delegated with P2P - Voted NO with VETO on prop69 - Never voted otherwhise
+cosmos14w596s2986xdl23hyy4hac64c2yda3j7fc97yx,1068002.771648,Delegated with Zero Knowledge Validator
+cosmos192rx0r7994fgh8wkqpt8j2wfg6nge7w8463f6f,1158177.443500,Last transaction on Mintscan 8 months ago - Everything delegated with Paradigm and they did not vote on prop69
+cosmos144fzpepuvdftv4u4r9kq8t35ap2crruv4u3udz,1391573.188882,OKK #01 Every few minutes multisend tx - no delegations
+cosmos1xjkgnzwp4ghv4ay5m04ks753mllsxvy4069m7r,1638883.641222,"Last transaction 5 months ago, never votes, no delegations "
+cosmos1jtdkj8hxhj88jxv8lul9xvdpnwsl00evvvpnhj,985690.113181,
+cosmos14tcxx9z6gtdslajzz5qjlxu3vl3v23djyl6tgh,1473875.374469,Everything delegated with BOUBOUNODE and they didn't vote on prop69
+cosmos1l0znsvddllw9knha3yx2svnlxny676d8ns7uys,1071120.716581,Binance #03 redraw
+cosmos102s5y9jv45wsztjl7mgzh77lqq9lvzwas5pzc5,61567.846615,Everything delegated to HUOBI
+cosmos1ymppl25sfgj3hc7w2az0h2mr737phcvfkr2gt4,1909639.097500,Last transaction on Mintscan 8 months ago - Everything delegated with Paradigm and they did not vote on prop69
+cosmos1vrf87mrnep5zh3lm9wfk388r7xxqhz2jwauk4h,2100000.000000,NO delegations - last tx 8 months ago
+cosmos1zhwyfs8f8hjd50y28fcn05ew5d6mtz0v9tx5xg,2827589.628140,Last transaction on Mintscan 8 months ago - Everything delegated with Paradigm and they did not vote on prop69
+cosmos1fcyx472u3r2cg90zufv9pludp8r6scfwu2hnhx,3448219.419036,Everything delegated to Multichain Ventures
+cosmos105hssfshxkdrj4ycpdd5yn00wmscjyfc6vk6zw,5001933.264030,Coinbase Custody
+cosmos1crje20aj4gxdtyct7z3knxqry2jqt2fuaey6u5,4057562.421302,Upbut #03
+cosmos1unc788q8md2jymsns24eyhua58palg5kc7cstv,5697736.157006,Interchain Foundation #02
+cosmos18zdww6md2ym8yfat9h0aztcts5vad2nh07w48x,5001843.532162,Coinbase Custody
+cosmos16m93gjfqvnjajzrfyszml8qm92a0w67ntjhd3d,5794879.109649,All delegated with Polychain
+cosmos1zr7aswwzskhav7w57vwpaqsafuh5uj7nv8a964,6261901.848020,50/50 delegated between Stake.fish and Zero Knowledge validator
+cosmos1dtq0y9reqst7d99fd3c7x6dflh4eazm4ha8qqh,8490381.744458,Nearly everything delegated to Dokia Capital
+cosmos1z8mzakma7vnaajysmtkwt4wgjqr2m84tzvyfkz,7912533.350022,Interchain Foundation #01
+cosmos1cj7u0wpe45j0udnsy306sna7peah054upxtkzk,8181067.587219,Last transaction on Mintscan 8 months ago - Most delegated to Zero Knowledge Validator
+cosmos1x54ltnyg88k0ejmk8ytwrhd3ltm84xehrnlslf,5038434.860807,IBC account - last tx 3 months ago?
+cosmos1nm0rrq86ucezaf8uj35pq9fpwr5r82cl8sc7p5,11933832.444997,KRAKEN
+cosmos15hmqrc245kryaehxlch7scl9d9znxa58qkpjet,11050747.796728,IGNITE
+cosmos14lultfckehtszvzw4ehu0apvsr77afvyhgqhwh,9501833.540383,DokiaCapital #01 (Validator)
+cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s,19277281.397678,Binance stakinbg #04 BUT also delegating to SYNCLUB. Is that part of Binance?

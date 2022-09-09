@@ -1,2 +1,81 @@
 address,type,comment
 cosmosxxxx,example,"Just an example line"
+
+cosmos156gqf9837u7d4c4678yt3rl4ls9c5vuuxyhkw6,CEX,"Binance Staking validator"
+cosmos1a3yjj7d3qnx4spgvjcwjq9cw9snrrrhu3rw8nv,CEX,"Coinbase Custody validator"
+cosmos196ax4vc0lwpxndu9dyhvca7jhxp70rmcfhxsrt,CEX,"Kraken validator"
+cosmos1te8nxpc2myjfrhaty0dnzdhs5ahdh5ag8gswfl,CEX,"CoinOneNode validator South-Korean CEX"
+cosmos1kn3wugetjuy4zetlq6wadchfhvu3x740cdwhk4,CEX,"Huobi validator"
+cosmos12w6tynmjzq4l8zdla3v4x0jt8lt4rcz5dz2hye,CEX,"Huobi-1 validator"
+cosmos1crqm3598z6qmyn2kkcl9dz7uqs4qdqnrlyn8pq,CEX,"Coinbase cloud validator"
+cosmos1nm0rrq86ucezaf8uj35pq9fpwr5r82cl8sc7p5,CEX,"Kraken validator Now jailed"
+cosmos18ruzecmqj9pv8ac0gvkgryuc7u004te9xr2mcr,CEX,"Binance staking validator Now jailed"
+cosmos1ewtwxeksk59k0an3etj3n93al64l5qws0x66x3,CEX,"Bitrue validator Now jailed"
+cosmos1uv26ytrnmydyctq0s58ve2k6wn2p653m9yn69g,CEX,"Bity.com validator Now jailed"
+cosmos157qezau9xnzypse3vu2vhs7r4ee83fdead6693,CEX,"Kucoin validator"
+cosmos1yw5s259jkcg0jzmh7sce29uk0lqqw2umy2qttj,CEX,"Cex.io validator"
+cosmos1ptz7xq0fanh4kfvp6fdhevkx90axaq7dx6vm7v,CEX or DEX,"Coback.co.kr validator Now jailed"
+cosmos1sd4tl9aljmmezzudugs7zlaya7pg2895tyn79r,CEX or DEX,"Infstones.com validator Looks like they work with Binance"
+cosmos19yy989ka5usws6gsd8vl94y7l6ssgdwsx8yd7t,Mining Pool,"OKEx validator www.okpool.top"
+cosmos1hjadhj9nqzpye2vkmkz4thahhd0z8dh3eer4jx,DEX or Wallet,"www.atomicwallet.io/ validator"
+cosmos1keltez56g3zm9w8wr8gcmmulze48g2q3eygmtt,Wallet,"DefiWallet validator from crypto.com"
+cosmos1z66j0z75a9flwnez7sa8jxx46cqu4rfhg35jxa,?,"Debo validator closing down. Was mentioned as the juno whale"
+cosmos1x065cjlgejk2p2la0029akfvdy52gtq970qj8w,Wallet,"mathwallet.org/en-us/ validator"
+cosmos10wljxpl03053h9690apmyeakly3ylhejxgve8g,Wallet,"Ledger validator Staking through Ledger"
+cosmos1q9p73lx07tjqc34vs8jrsu5pg3q4ha53sg5eea,,"Validator closing down"
+cosmos1tk2xujvwtn0q60u8xelh50u9xzqvrnpksem6vp,,"NASDAQ-BTCS validator 100% commission US Public Company"
+cosmos142w8q2l0gxsfna72gq8t7e4ee4ul37e9jlu724,?,"Neoply validator 100% commission"
+cosmos1emaa7mwgpnpmc7yptm728ytp9quamsvuz92x5u,?,"Kochacolaj validator 100% commission"
+cosmos1xym2qygmr9vanpa0m7ndk3n0qxgey3ff8vscct,?,"www.grant.fish validator 100% commission"
+cosmos1cgh5ksjwy2sd407lyre4l3uj2fdrqhpk84m04f,?,"Hashquark validator Website states regulatory policy requirements, we hereby reiterate that HashQuark does not provide service or accept user from countries or jurisdictions, including but not limited to, the Mainland China, the United States of America including Puerto Rico, American Samoa (not Samoa), Guam, the Northern Mariana Islands, and the Virgin Islands of the United States (St. Croix, St. John Island, and St. Thomas). https://www.hashquark.io/"
+cosmos1gdg6qqe5a3u483unqlqsnullja23g0xv9zj76u,,"zugerselfdelegation validator 100% commission"
+BEGIN ........ below this line is the richlist,, "1000 biggest holders according to Mintscan, special accounts have Tags(Type)"
+cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh,bonded tokens,
+cosmos1p3ucd3ptpw902fluyjzhq3ffgq4ntddac9sa3s,Binance #04 (Staking),
+cosmos1nm0rrq86ucezaf8uj35pq9fpwr5r82cl8sc7p5,Kraken #01,
+cosmos15hmqrc245kryaehxlch7scl9d9znxa58qkpjet,Ignite,
+cosmos14lultfckehtszvzw4ehu0apvsr77afvyhgqhwh,DokiaCapital #01 (Validator),
+cosmos19aqfqnjd88z3842muc5jfhqy09xwr469dlexfk,DokiaCapital #01 (Validator),"reward address"
+cosmos1dtq0y9reqst7d99fd3c7x6dflh4eazm4ha8qqh,DokiaCapital #02 (Validator),
+cosmos1jv65s3grqf6v6jl3dp4t6c9t9rk99cd88lyufl,Distribution,
+cosmos1z8mzakma7vnaajysmtkwt4wgjqr2m84tzvyfkz,Interchain Foundation #01,
+cosmos1unc788q8md2jymsns24eyhua58palg5kc7cstv,Interchain Foundation #02,
+cosmos1x54ltnyg88k0ejmk8ytwrhd3ltm84xehrnlslf,IBC Account,
+cosmos105hssfshxkdrj4ycpdd5yn00wmscjyfc6vk6zw,Coinbase #03,
+cosmos1u7at27nzzl0p6h7j0x5wq0s0e8dw7ezzv75q6c,Coinbase #03,"reward address"
+cosmos18zdww6md2ym8yfat9h0aztcts5vad2nh07w48x,Coinbase #01,
+cosmos10wenc4mxggk2nv49rca808a834hnnrg47hnkeu,Coinbase #01,"reward address"
+cosmos1crje20aj4gxdtyct7z3knxqry2jqt2fuaey6u5,Upbit #03,
+cosmos1tygms3xhhs3yv487phx3dw4a95jn7t7lpm470r,Unbonding tokens,
+cosmos144fzpepuvdftv4u4r9kq8t35ap2crruv4u3udz,OKK #01,
+cosmos1l0znsvddllw9knha3yx2svnlxny676d8ns7uys,Binance #03 (Withdraw),
+cosmos1408lwhlux8qjvfs54zanvvcszls06utysftc9q,IBC Account,
+cosmos1t5u0jfg3ljsjrh2m9e47d4ny2hea7eehxrzdgd,Coinbase #06,
+cosmos1ju6tlfclulxumtt2kglvnxduj5d93a64r5czge,IBC Account,
+cosmos1a6usu3y3t5fcxa4kdtv4cgj7cmav7j0l6uzuvq,IBC Account,
+cosmos1f9cae0zhtjm4ul2uhq60vs8ulm9am4w4v5rw40,IBC Account,
+cosmos1a3yjj7d3qnx4spgvjcwjq9cw9snrrrhu3rw8nv,Coinbase #08,
+cosmos1ver4d6nf3qv8md4052nzmzl4p0gm9f7qyhqys6,IBC Account,
+cosmos1spe44szj45alspv47p7zss595rdd0aup0k663u,Bithumb #03,
+cosmos1yp8q44e4t4evksnczmzlw0ngxj4hwuv5rjw3a8,Bithumb #02 (Withdraw),
+cosmos1z3a0wasepmcs64drt2gs62lfa0wkhj6rx0l5dt,Bithumb #05,
+cosmos12cegj7aqwwhzztl78z4ufe3hs4j6x3g2xwlrsj,IBC Account,
+cosmos13557nkpqpnnhxmdu3euj3gkta762jym6hljgn4,Bithumb #04,
+cosmos144sh8vyv5nqfylmg4mlydnpe3l4w780jsrmf4k,MEXC #01 (Deposit),
+cosmos1347r7znpxr9uxsd8t66wjurgfgn93u3vxr348v,Upbit #02 (Withdraw),
+cosmos1pnfunk0cl7lpwyrxw7m57kt74zd6g2qh4udppy,Upbit #11 (Staking),
+cosmos1hjyde2kfgtl78twvhs53u5j2gcsxrt649nn8j5,Upbit #01 (Deposit),
+cosmos1ut6vfjcltr5fmlthr86vpmcxnus9keavxmstlr,Upbit #13 (Staking),
+cosmos1rh65gtzdeavc45t7ylmurvhyd0hcht9hkdg7fz,Upbit #15 (Staking),
+cosmos102pcnjqspyrfplhdccrz8usg5qhxjxv5a0q9dx,Upbit #17 (Staking),
+cosmos1024dxg29cnwq6ljvwgt284xkk5xgmep79rtw5g,Upbit #18 (Staking),
+cosmos1dp0xhtj2x8ky88lvegqt3500vrmjqast6ldjdt,IBC Account,
+cosmos1peha5yfjnt2ua8x7th85say0pmm9t5mj35angp,Upbit #16 (Staking),
+cosmos1helwgzrpwqvjsgv5nrflwdc68n5dtcffwgnegu,Upbit #14 (Staking),
+cosmos1ty4z8vumqk7uxd43e22l974ekqj4lta0vf0qtx,Upbit #20 (Staking),
+cosmos176nve774xk0wvtw6atn4vtg9w2nejcscqzd0fm,Upbit #12 (Staking),
+cosmos1kglms05v6jlazkdeel46h0famvpredkluu7c4w,Upbit #19 (Staking),
+cosmos1tt2z57mhgxquacgdz002m0ka2jyrhrkuy7ffrr,IBC Account,
+cosmos1up22cc48dtnf0rk99hr0uy5ykvcqruksp7rtls,IBC Account,
+cosmos138788g8nr0u2tyjzlrf39xzuhvqz4vh3rxxkzu,IBC Account,
+END........ above this line is the richlist,,"special accounts have Tags(Type)"
