@@ -1,7 +1,8 @@
-As I already wrote in the comments under https://gist.github.com/moul/b1eab022e24eafa5a158d32ac6f24ab7,,
-"There were some very strange addresses with a lot of Atoms but no tx history on Github, some were clearly airdrop hunters.",,
-I decided to have another look at the list of these 50 highest airdrop receivers and write down my findings. I started from 50 and worked my way up. Some addresses looked very normal and are not on this file.,,
-"Maybe you want to do something about it, maybe not.",,
+As I already wrote in the comments under https://gist.github.com/moul/b1eab022e24eafa5a158d32ac6f24ab7
+"There were some very strange addresses with a lot of Atoms but no tx history on Github, some were clearly airdrop hunters."
+I decided to have another look at the list of these 50 highest airdrop receivers and write down my findings.
+I started from 50 and worked my way up. Some addresses looked very normal and are not on this file.
+"Maybe you want to do something about it, maybe not."
 ,,
 acc_address,Atoms on 09.09.2022,Comment
 cosmos1eghtsjlwkghnayp8006l65xnu8p62l7v2sjqyj,576352.457640,Nothing staked-Constant large tx's
