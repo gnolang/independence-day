@@ -33,7 +33,7 @@ export-sqlite: db.sqlite
 	./export-sqlite.sh
 .PHONY: compute-sqlite
 
-db.sqlite: skip.csv
+db.sqlite: skip.csv build-sqlite.sh
 	@make build-sqlite
 
 
