@@ -52,6 +52,3 @@ DROP TABLE delegations_grouped;
 DROP TABLE undelegations_grouped;
 .tables
 EOF
-
-exit 1
-echo 'INSERT INTO accounts (address, liquid_uatoms) VALUES ("blah", 42);' | sqlite3 db.sqlite
