@@ -1,3 +1,4 @@
 *.csv
 *.json
 db.sqlite
+account_numbers.txt
