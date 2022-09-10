@@ -33,6 +33,10 @@ export-sqlite: db.sqlite
 	./export-sqlite.sh
 .PHONY: compute-sqlite
 
+dump-sqlite: db.sqlite
+	echo ".headers on\n.mode csv\nSELECT * FROM accounts ORDER BY cummulative_atoms DESC" | sqlite3 $< > dump.csv
+.PHONY: dump-sqlite
+
 db.sqlite: skip.csv build-sqlite.sh
 	@make build-sqlite
 
