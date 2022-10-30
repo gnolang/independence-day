@@ -9,6 +9,7 @@ import (
 
 	"github.com/gnolang/gno/pkgs/bech32"
 	"github.com/gnolang/gno/pkgs/crypto"
+	osm "github.com/gnolang/gno/pkgs/os"
 
 	"github.com/cosmos/cosmos-sdk/types"
 )
@@ -35,6 +36,12 @@ type Distribution struct {
 // Air drop 75%
 
 const TOTAL_AIRDROP = 750000000
+
+var ibcEscrowAddress = map[string]bool{}
+
+func init() {
+	loadEscrowAddress()
+}
 
 func main() {
 	bz, err := ioutil.ReadFile("snapshot_consolidated_10562840.json")
@@ -205,6 +212,11 @@ func convertAddress(cosmosAddress string) (string, error) {
 }
 
 func skip(address string) bool {
+	// skip ibc escrow address
+	if ibcEscrowAddress[address] {
+		return true
+	}
+
 	//identify  and skip module account
 	/*
 	   cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh: 184285143502836 uatom
@@ -227,4 +239,20 @@ func skip(address string) bool {
 	}
 
 	return false
+}
+
+func loadEscrowAddress() {
+	content := osm.MustReadFile("ibc_escrow_address.txt")
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		// format:
+		// cosmos1xxxxxx:g1xxxxxxxxxxxxxxxx:channel-1
+		addr := strings.Split(line, ":")[0]
+
+		ibcEscrowAddress[addr] = true
+	}
 }
