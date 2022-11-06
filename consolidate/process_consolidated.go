@@ -214,7 +214,7 @@ func convertAddress(cosmosAddress string) (string, error) {
 func skip(address string) bool {
 	// skip ibc escrow address
 	if ibcEscrowAddress[address] {
-		return true
+		// return true
 	}
 
 	//identify  and skip module account
