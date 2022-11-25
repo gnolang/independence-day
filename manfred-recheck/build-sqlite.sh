@@ -11,7 +11,10 @@ CREATE TABLE accounts (
        unbounding_atoms DOUBLE DEFAULT 0,
        tag STRING DEFAULT "",
        comment STRING DEFAULT "",
-       cummulative_atoms DOUBLE
+       cummulative_atoms DOUBLE,
+       capped DOUBLE DEFAULT 0,
+       derived_balance DOUBLE DEFAULT 0,
+       derived_toris DOUBLE DEFAULT 0
 );
 CREATE TABLE uatom_holders (address STRING PRIMARY KEY, quantity DOUBLE);
 CREATE TABLE delegations_grouped (address STRING PRIMARY KEY, quantity DOUBLE, count INTEGER);
@@ -49,7 +52,7 @@ INSERT INTO accounts(address, staked_atoms) \
 INSERT INTO accounts(address, unbounding_atoms) \
        SELECT address, quantity FROM undelegations_grouped WHERE true \
        ON CONFLICT(address) DO \
-       UPDATE SET staked_atoms = excluded.unbounding_atoms;
+       UPDATE SET unbounding_atoms = excluded.unbounding_atoms, with_problem = TRUE;
 INSERT INTO accounts(address, tag, comment) \
        SELECT address, tag, reason FROM skips WHERE true \
        ON CONFLICT(address) DO \
