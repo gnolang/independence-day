@@ -22,7 +22,7 @@ exclude_addresses = ['cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh', 'cosmos1ty
 # Filter from votes DataFrame
 votes_df = votes_df[~votes_df['address'].isin(exclude_addresses)]
 
-# Filter from the data list
+# Filter from data list
 data = [entry for entry in data if entry['address'] not in exclude_addresses]
 
 # Prop 69
@@ -50,27 +50,43 @@ for entry in data:
     })
 
 adjusted_df = pd.DataFrame(adjusted_data)
-total_atom = adjusted_df['atom'].sum()  # Manually adjust later based on explorer sum
+total_atom = adjusted_df['atom'].sum()  # Manually adjust later based on explorer/snapshot
 adjusted_df['atom_percentage'] = (adjusted_df['atom'] / total_atom)
 total_adjusted_atom = adjusted_df['adjusted_atom'].sum()
 adjusted_df['adjusted_atom_percentage'] = (adjusted_df['adjusted_atom'] / total_adjusted_atom)
 adjusted_df['gnot_percentage'] = adjusted_df['adjusted_atom_percentage']
 
-# Airdrop option functions WIP
+# Deduct New Tendermint's allocation from other addresses
+new_tendermint_percentage = 0.25
+adjusted_df['gnot_percentage'] *= (1 - new_tendermint_percentage)
+
+# Insert New Tendermint data
+new_tendermint_data = {
+    'address': 'New Tendermint',
+    'atom': 0,
+    'adjusted_atom': 0,
+    'vote': '',
+    'atom_percentage': 0,
+    'adjusted_atom_percentage': 0,
+    'gnot_percentage': new_tendermint_percentage
+}
+adjusted_df = adjusted_df.append(new_tendermint_data, ignore_index=True)
+
+# Airdrop options
 def option_1(dataframe, genesis_mint=750e6):
-    dataframe['gnot_allocated'] = (dataframe['gnot_percentage'] / 100) * genesis_mint
+    dataframe['gnot_allocated'] = dataframe['gnot_percentage'] * genesis_mint
     return dataframe
 
 def option_2(dataframe, total_gnot=1e9):
-    dataframe['gnot_allocated'] = (dataframe['gnot_percentage'] / 100) * total_gnot
+    dataframe['gnot_allocated'] = dataframe['gnot_percentage'] * total_gnot
     return dataframe
 
 def option_3(dataframe, total_gnot=1e9, sub_dao_amount=250e6):
-    dataframe['gnot_allocated'] = (dataframe['gnot_percentage'] / 100) * (total_gnot - sub_dao_amount)
+    dataframe['gnot_allocated'] = dataframe['gnot_percentage'] * (total_gnot - sub_dao_amount)
     return dataframe
 
 def option_4(dataframe, total_gnot=1e9):
-    dataframe['gnot_allocated'] = (dataframe['gnot_percentage'] / 100) * total_gnot
+    dataframe['gnot_allocated'] = dataframe['gnot_percentage'] * total_gnot
     return dataframe
 
 option_1_df = option_1(adjusted_df.copy())
@@ -100,5 +116,6 @@ for sheetname in ['Base Data', 'Option 1', 'Option 2', 'Option 3', 'Option 4']:
         for row in range(2, ws.max_row + 1):  # Start from 2 to skip header
             ws[f"{col}{row}"].number_format = '0.00%'
 
+wb.save(output_path)
 wb.save(output_path)
 
