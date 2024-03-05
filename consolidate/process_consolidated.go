@@ -187,7 +187,7 @@ func weight(vote string, uatom int, duatom int) int {
 		duatomWeight = duatomWeight.Mul(duatomWeight, big.NewFloat(1.1))
 	} else { // ABSTAIN, UNSPECIFIED, No voting options.
 
-		// do nothing, they have the same weight as the delegated uatom.
+		duatomWeight = duatomWeight.Mul(duatomWeight, big.NewFloat(0.7))
 	}
 
 	duatomInt, _ := duatomWeight.Int64()
