@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -173,25 +174,26 @@ func distribute(dist []Distribution, totalWeight int) []Distribution {
 //  VOTE_OPTION_NO_WITH_VETO = 4;
 
 func weight(vote string, uatom int, duatom int) int {
-	weight := 0
+	duatomWeight := big.NewFloat(float64(duatom))
 	// rules for voting option
 	if strings.Contains(vote, "\"option\":1") { // YES on Pro69
 
-		duatom = 0
+		duatomWeight.SetFloat64(0)
 	} else if strings.Contains(vote, "\"option\":4") { // NO_WITH_VETO  on Pro69
 
-		duatom = duatom * 2
+		duatomWeight = duatomWeight.Mul(duatomWeight, big.NewFloat(1.3))
 	} else if strings.Contains(vote, "\"option\":3") { // NO on Pro69
 
-		duatom = duatom + duatom>>1 //  * 1.5
+		duatomWeight = duatomWeight.Mul(duatomWeight, big.NewFloat(1.1))
 	} else { // ABSTAIN, UNSPECIFIED, No voting options.
 
 		// do nothing, they have the same weight as the delegated uatom.
 	}
 
-	weight = uatom + duatom
+	duatomInt, _ := duatomWeight.Int64()
+	totalWeight := uatom + int(duatomInt)
 
-	return weight
+	return totalWeight
 }
 
 func convertAddress(cosmosAddress string) (string, error) {
