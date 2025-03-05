@@ -2,7 +2,7 @@
 
 Height 10562840 on 5/20/2022 8:00 PDT
 
-[consolidated snapshot](./snapshot_consolidated_10562840.json.zip) 21.4MB
+[consolidated snapshot](./snapshot_consolidated_10562840.json.gz) 27MB
 
    * Address: atom holder with balances or delegations
    * []Coin: all assets in the account.
@@ -15,9 +15,7 @@ Height 10562840 on 5/20/2022 8:00 PDT
 
 ## Where the data is from ?
 
-* Balance and delegation data are from  5/20 export data
-It was published in this [post](../README.md)
-Here is the direct download [link](https://test1.gno.land/static/cosmos_10562840_export.json), a 1.5G json file
+* Balance and delegation data are from the 5/20 export data. If you want to capture the snapshot yourself, follow the steps in [README.md](../README.md)
 
 
 * In this [directory](./), you will find the last voting submission of proposal 69 (last_vote_pro69.json.zip ) and validator states with token and share ratio (validators.json). Those were received from the archive node database downloaded from  quicksync.io cosmos hub 4 (https://quicksync.io/networks/cosmos.html)
@@ -55,15 +53,3 @@ last_vote_pro69.json:
 
 * option1: recreate the result from the [repo](https://github.com/piux2/gnobounty7) and see if there are steps and data was not correct
 * option2: Use other methods to cross-check the final data set provided.
-
-## Worth mentioning
-
-There are two other proposals worth checking, and we could use them to cross-check the results.
-
-
-[@moul](https://github.com/moul)
-[https://github.com/gnolang/bounties/issues/24](https://github.com/gnolang/bounties/issues/24)
-
-
-[@catShaark](https://github.com/catShaark)
-[https://github.com/gnolang/bounties/issues/25](https://github.com/gnolang/bounties/issues/25)

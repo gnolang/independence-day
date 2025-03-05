@@ -1,9 +1,6 @@
 # independence-day
 
-The 5/20 export data is 
-[here](https://test1.gno.land/static/cosmos_10562840_export.json) (beware, large file).
-
-Please try to replicate this yourself, if you have a full node.
+To replicate the snapshot yourself, you need a full node.
 The instructions can be found [here](./snapshot/cosmoshub_snapshot.md). #BOUNTY
 
 ## plan
@@ -16,11 +13,6 @@ If you can read this, we still need to do the following:
  * apply the vote information found here to the above according to weighting
    rules based on voting of proposition 69.
 
-test1.gno.land did not include any reasonable gnot distribution.
-
-test2.gno.land will be the first testnet that includes distribution
-information, but it will be incomplete. We will coordinate bounties on
-test2.gno.land to complete the distribution for test3.gno.land. 
 
 ## contributions
 
