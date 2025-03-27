@@ -3,16 +3,11 @@
 To replicate the snapshot yourself, you need a full node.
 The instructions can be found [here](./snapshot/cosmoshub_snapshot.md). #BOUNTY
 
-## plan
+## Verification
 
-If you can read this, we still need to do the following:
-
- * distill account balance information from the export json file.
-   - the tricky part is in finding the rate between ATOMs and staked "shares",
-     and accounting for slashing etc.
- * apply the vote information found here to the above according to weighting
-   rules based on voting of proposition 69.
-
+After downloading the balances on May 20, 2022 and comparing them with the weighted votes, we calculated the airdrop distribution.
+- The full list and balance is [here](https://github.com/gnolang/independence-day/tree/main/mkgenesis/balances.txt.zip)
+- gno.land addresses are derived from Cosmos addresses. Simply replace `cosmos` at the start of your Cosmos address with `g` and you'll be able to find your address.
 
 ## contributions
 
