@@ -7,7 +7,7 @@ The instructions can be found [here](./snapshot/cosmoshub_snapshot.md). #BOUNTY
 
 After downloading the balances on May 20, 2022 and comparing them with the weighted votes, we calculated the airdrop distribution.
 - The full list and balance is [here](https://github.com/gnolang/independence-day/tree/main/mkgenesis/balances.txt.zip)
-- gno.land addresses are derived from Cosmos addresses. Simply replace `cosmos` at the start of your Cosmos address with `g` and you'll be able to find your address.
+- gno.land addresses are derived from Cosmos addresses. Simply convert your Cosmos address with the [Bech32 converter](https://www.bech32converter.com/) using the `cosmos` and `g` prefixes.
 
 ## contributions
 
