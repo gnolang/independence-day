@@ -68,6 +68,12 @@ func (b *balanceFile) compare(other *balanceFile) bool {
 	return diff
 }
 
+func (b *balanceFile) addBalances(other *balanceFile) {
+	for address, coins := range other.balances {
+		b.balances[address] = b.balances[address].Add(coins)
+	}
+}
+
 // Define a function type for parsing a balance line.
 type parserFunc func(string) (*gnoland.Balance, error)
 
@@ -80,15 +86,22 @@ func parseBalanceFile(filename string, parseLine parserFunc) (*balanceFile, erro
 	}
 	defer file.Close()
 
-	// Create a new gzip reader
-	gzReader, err := gzip.NewReader(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+	var scanner *bufio.Scanner
+
+	// If the file is not gzipped, create a scanner directly.
+	if !strings.HasSuffix(filename, ".gz") {
+		scanner = bufio.NewScanner(file)
+	} else { // Else, create a new gzip reader.
+		gzReader, err := gzip.NewReader(file)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gzReader.Close()
+
+		scanner = bufio.NewScanner(gzReader)
 	}
-	defer gzReader.Close()
 
 	var (
-		scanner  = bufio.NewScanner(gzReader)
 		balances = make(balanceMap)
 		lineNum  = 0
 	)
@@ -207,27 +220,39 @@ func parseConsolidateLine(line string) (*gnoland.Balance, error) {
 	return gnoBalance, nil
 }
 
+type fileParser struct {
+	filename string
+	parser   parserFunc
+}
+
 func main() {
 	var (
-		parsers = map[string]parserFunc{
-			"../mkgenesis/balances.txt.gz":     parseGnoBalance,
-			"../consolidate/genbalance.txt.gz": parseConsolidateLine,
+		parsers = []fileParser{
+			{"../mkgenesis/balances.txt.gz", parseGnoBalance},
+			{"../mkgenesis/non-airdrop.txt", parseGnoBalance},
+			{"../consolidate/genbalance.txt.gz", parseConsolidateLine},
 		}
-		balanceFiles = make([]*balanceFile, 0, 2)
+		balanceFiles = make([]*balanceFile, 0, len(parsers))
 	)
 
 	// Import all balance files using the parsers defined above.
-	for filename, parser := range parsers {
-		fmt.Printf("Importing balance file: %s\n", filename)
-		balanceFile, err := parseBalanceFile(filename, parser)
+	for _, parser := range parsers {
+		fmt.Printf("Importing balance file: %s\n", parser.filename)
+		balanceFile, err := parseBalanceFile(parser.filename, parser.parser)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error importing balance file %s: %v\n", filename, err)
+			fmt.Fprintf(os.Stderr, "Error importing balance file %s: %v\n", parser.filename, err)
 			continue
 		}
 
 		balanceFiles = append(balanceFiles, balanceFile)
 	}
 
-	// Compare the imported balance files.
-	balanceFiles[0].compare(balanceFiles[1])
+	// Add non-airdrop balances to the consolidate balance file.
+	fmt.Println("Adding non-airdrop to consolidate balance file")
+	balanceFiles[2].addBalances(balanceFiles[1])
+
+	// Compare mkgenesis balance file with the consolidate balance file.
+	if !balanceFiles[0].compare(balanceFiles[2]) {
+		fmt.Println("Balance files match.")
+	}
 }
