@@ -46,7 +46,27 @@ func init() {
 }
 
 func main() {
-	bz, err := ioutil.ReadFile("snapshot_consolidated_10562840.json")
+	var bz []byte
+	var err error
+	var file *os.File
+	var gzReader *gzip.Reader
+
+	// Read the compressed file
+	file, err = os.Open("snapshot_consolidated_10562840.json.gz")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	// Create a gzip reader
+	gzReader, err = gzip.NewReader(file)
+	if err != nil {
+		panic(err)
+	}
+	defer gzReader.Close()
+
+	// Read the decompressed content
+	bz, err = ioutil.ReadAll(gzReader)
 	if err != nil {
 		panic(err)
 	}
@@ -62,13 +82,13 @@ func main() {
 	dist = distribute(dist, totalWeight)
 
 	// Create gzipped file
-	file, err := os.Create("genbalance.txt.gz")
+	outputFile, err := os.Create("genbalance.txt.gz")
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer outputFile.Close()
 
-	gw := gzip.NewWriter(file)
+	gw := gzip.NewWriter(outputFile)
 	defer gw.Close()
 
 	for _, d := range dist {
