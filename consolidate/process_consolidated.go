@@ -1,9 +1,11 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
@@ -33,9 +35,9 @@ type Distribution struct {
 }
 
 // total 1,000,000,000 gnot
-// Air drop 75%
+// Air drop 70%
 
-const TOTAL_AIRDROP = 750000000
+const TOTAL_AIRDROP = 700000000
 
 var ibcEscrowAddress = map[string]bool{}
 
@@ -44,7 +46,27 @@ func init() {
 }
 
 func main() {
-	bz, err := ioutil.ReadFile("snapshot_consolidated_10562840.json")
+	var bz []byte
+	var err error
+	var file *os.File
+	var gzReader *gzip.Reader
+
+	// Read the compressed file
+	file, err = os.Open("snapshot_consolidated_10562840.json.gz")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	// Create a gzip reader
+	gzReader, err = gzip.NewReader(file)
+	if err != nil {
+		panic(err)
+	}
+	defer gzReader.Close()
+
+	// Read the decompressed content
+	bz, err = ioutil.ReadAll(gzReader)
 	if err != nil {
 		panic(err)
 	}
@@ -59,13 +81,26 @@ func main() {
 	dist, totalWeight := qualify(accounts)
 	dist = distribute(dist, totalWeight)
 
+	// Create gzipped file
+	outputFile, err := os.Create("genbalance.txt.gz")
+	if err != nil {
+		panic(err)
+	}
+	defer outputFile.Close()
+
+	gw := gzip.NewWriter(outputFile)
+	defer gw.Close()
+
 	for _, d := range dist {
 		ugnot := whole(d.Ugnot.String())
 
 		if ugnot != "0" {
-			fmt.Printf("%s:%s=%sugnot\n", d.Account.Address, d.GnoAddress, ugnot)
+			line := fmt.Sprintf("%s:%s=%sugnot\n", d.Account.Address, d.GnoAddress, ugnot)
+			_, err := gw.Write([]byte(line))
+			if err != nil {
+				panic(err)
+			}
 		}
-
 	}
 }
 
