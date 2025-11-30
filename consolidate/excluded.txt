@@ -1,0 +1,5 @@
+# Accounts that are excluded from the airdrop distribution
+
+cosmos14lultfckehtszvzw4ehu0apvsr77afvyhgqhwh # DokiaCapital
+cosmos1dtq0y9reqst7d99fd3c7x6dflh4eazm4ha8qqh # DokiaCapital
+cosmos19aqfqnjd88z3842muc5jfhqy09xwr469dlexfk # DokiaCapital

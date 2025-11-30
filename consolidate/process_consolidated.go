@@ -40,9 +40,11 @@ type Distribution struct {
 const TOTAL_AIRDROP = 700000000
 
 var ibcEscrowAddress = map[string]bool{}
+var excludedAddresses = map[string]bool{}
 
 func init() {
 	loadEscrowAddress()
+	loadExcludedAddresses()
 }
 
 func main() {
@@ -247,6 +249,11 @@ func convertAddress(cosmosAddress string) (string, error) {
 }
 
 func skip(address string) bool {
+	// skip excluded addresses
+	if excludedAddresses[address] {
+		return true
+	}
+
 	// skip ibc escrow address
 	if ibcEscrowAddress[address] {
 		// return true
@@ -289,5 +296,27 @@ func loadEscrowAddress() {
 		addr := strings.Split(line, ":")[0]
 
 		ibcEscrowAddress[addr] = true
+	}
+}
+
+func loadExcludedAddresses() {
+	content := osm.MustReadFile("excluded.txt")
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		// Trim whitespace
+		line = strings.TrimSpace(line)
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Extract address (before any comment or whitespace)
+		// Format: cosmos1xxxxxx # comment
+		parts := strings.Fields(line)
+		if len(parts) > 0 {
+			addr := parts[0]
+			excludedAddresses[addr] = true
+		}
 	}
 }
