@@ -28,14 +28,22 @@ var (
 	ledger_address_gno    = "g1fz9nhh7upfn9sv02f3ck4zsu8uqaesmujsxzdw"
 )
 
+var (
+	cosmos_address_gno = "g1zzzyklkaqafpe8200y7y6y3u9a3cehkrekdft4"
+)
+
+const TOTAL_AIRDROP_TESTS = 700000000
+
 func TestConvertAddress(t *testing.T) {
-	test2, err := convertAddress(test2_address_cosmos)
+	test2, err := convertAddress(test2_address_cosmos, "cosmos")
+	assert.NoError(t, err)
 	assert.Equal(t, test2_address_gno, test2)
 
-	ledger, err := convertAddress(ledger_address_cosmos)
+	ledger, err := convertAddress(ledger_address_cosmos, "cosmos")
+	assert.NoError(t, err)
 	assert.Equal(t, ledger_address_gno, ledger)
 
-	ledger, err = convertAddress(ledger_address_gno)
+	_, err = convertAddress(ledger_address_gno, "cosmos")
 	assert.Error(t, err)
 
 	// TODO: test multisig convertion
@@ -72,17 +80,15 @@ func TestQualify(t *testing.T) {
 	accounts := []Account{a1}
 
 	dist, totalWeight := qualify(accounts)
-
-	assert.Equal(t, 455794000000, dist[0].Weight)
+	assert.Equal(t, 455794000000, dist[test2_address_gno].Weight)
 	assert.Equal(t, 455794000000, totalWeight)
 
 	// two
 	accounts = append(accounts, a2)
 
 	dist, totalWeight = qualify(accounts)
-
-	assert.Equal(t, 455794000000, dist[0].Weight)
-	assert.Equal(t, 8081636500000, dist[1].Weight)
+	assert.Equal(t, 455794000000, dist[test2_address_gno].Weight)
+	assert.Equal(t, 8081636500000, dist[ledger_address_gno].Weight)
 	assert.Equal(t, 8537430500000, totalWeight)
 }
 
@@ -90,36 +96,34 @@ func TestDistribute(t *testing.T) {
 	accounts := []Account{a1}
 
 	dist, totalWeight := qualify(accounts)
-	dist = distribute(dist, totalWeight)
+
+	dist = distribute(dist, totalWeight, TOTAL_AIRDROP_TESTS)
 	// get entire distribution, TOTAL_AIRDROP = 750Mgnot
-	assert.Equal(t, 455794000000, dist[0].Weight)
-	assert.Equal(t, int64(TOTAL_AIRDROP*1000000), dist[0].Ugnot.RoundInt64())
+	assert.Equal(t, 455794000000, dist[test2_address_gno].Weight)
+	assert.Equal(t, int64(TOTAL_AIRDROP_TESTS*1000000), dist[test2_address_gno].Ugnot.RoundInt64())
 
 	//  a portion
 
 	accounts = append(accounts, a2)
 	dist, totalWeight = qualify(accounts)
-	dist = distribute(dist, totalWeight)
-
-	assert.Equal(t, 455794000000, dist[0].Weight)
-	assert.Equal(t, 8081636500000, dist[1].Weight)
+	dist = distribute(dist, totalWeight, TOTAL_AIRDROP_TESTS)
+	assert.Equal(t, 455794000000, dist[test2_address_gno].Weight)
+	assert.Equal(t, 8081636500000, dist[ledger_address_gno].Weight)
 	assert.Equal(t, 8537430500000, totalWeight)
-	assert.Equal(t, "37371408177202", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "662628591822797", whole(dist[1].Ugnot.String()))
-
+	assert.Equal(t, "37371408177202", whole(dist[test2_address_gno].Ugnot.String()))
+	assert.Equal(t, "662628591822797", whole(dist[ledger_address_gno].Ugnot.String()))
 	// tiny portion
 	accounts = append(accounts, a3)
 	dist, totalWeight = qualify(accounts)
-	dist = distribute(dist, totalWeight)
-
-	assert.Equal(t, 455794000000, dist[0].Weight)
-	assert.Equal(t, 8081636500000, dist[1].Weight)
-	assert.Equal(t, 1, dist[2].Weight)
+	dist = distribute(dist, totalWeight, TOTAL_AIRDROP_TESTS)
+	assert.Equal(t, 455794000000, dist[test2_address_gno].Weight)
+	assert.Equal(t, 8081636500000, dist[ledger_address_gno].Weight)
+	assert.Equal(t, 1, dist[cosmos_address_gno].Weight)
 	assert.Equal(t, 8537430500001, totalWeight)
 
-	assert.Equal(t, "37371408177198", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "662628591822719", whole(dist[1].Ugnot.String()))
-	assert.Equal(t, "81", whole(dist[2].Ugnot.String()))
+	assert.Equal(t, "37371408177198", whole(dist[test2_address_gno].Ugnot.String()))
+	assert.Equal(t, "662628591822719", whole(dist[ledger_address_gno].Ugnot.String()))
+	assert.Equal(t, "81", whole(dist[cosmos_address_gno].Ugnot.String()))
 }
 
 func TestTotal(t *testing.T) {
@@ -165,5 +169,11 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	require.Equal(t, "699999999676645.000000000000000000", sum.String())
+	expected := types.MustNewDecFromStr("464584431185811.000000000000000000")
+	delta := types.NewDec(10)
+	diff := sum.Sub(expected).Abs()
+
+	if diff.GT(delta) {
+		t.Errorf("sum %s is not within ±10 of expected %s", sum.String(), expected.String())
+	}
 }

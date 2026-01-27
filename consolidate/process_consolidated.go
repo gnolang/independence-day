@@ -4,16 +4,16 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/gnolang/gno/pkgs/bech32"
 	"github.com/gnolang/gno/pkgs/crypto"
 	osm "github.com/gnolang/gno/pkgs/os"
-
-	"github.com/cosmos/cosmos-sdk/types"
 )
 
 type Account struct {
@@ -34,10 +34,13 @@ type Distribution struct {
 	Ugnot      types.Dec `json:"ugnot"`
 }
 
-// total 1,000,000,000 gnot
-// Air drop 70%
+const (
+	TOTAL_AIRDROP_ATOM     = 350000000
+	TOTAL_AIRDROP_ATONE    = 231000000
+	TOTAL_AIRDROP_CONTRIBS = 119000000
 
-const TOTAL_AIRDROP = 700000000
+	MULTISIG_AIB_ADDRESS = "g1multisigaddressxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+)
 
 var ibcEscrowAddress = map[string]bool{}
 var excludedAddresses = map[string]bool{}
@@ -68,7 +71,7 @@ func main() {
 	defer gzReader.Close()
 
 	// Read the decompressed content
-	bz, err = ioutil.ReadAll(gzReader)
+	bz, err = io.ReadAll(gzReader)
 	if err != nil {
 		panic(err)
 	}
@@ -80,8 +83,16 @@ func main() {
 		panic(err)
 	}
 
-	dist, totalWeight := qualify(accounts)
-	dist = distribute(dist, totalWeight)
+	atomDist, totalAtom := qualify(accounts)
+	atomDistributed := distribute(atomDist, totalAtom, TOTAL_AIRDROP_ATOM)
+
+	// Atone processing
+	atoneDist, totalAtone := processAtone()
+	atoneDistributed := distribute(atoneDist, totalAtone, TOTAL_AIRDROP_ATONE)
+
+	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
+
+	processNTMultisig(totalDist)
 
 	// Create gzipped file
 	outputFile, err := os.Create("genbalance.txt.gz")
@@ -93,9 +104,16 @@ func main() {
 	gw := gzip.NewWriter(outputFile)
 	defer gw.Close()
 
-	for _, d := range dist {
+	// Sort totalDist by Account.Address
+	ordered := make([]Distribution, 0, len(totalDist))
+	for _, d := range totalDist {
+		ordered = append(ordered, d)
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		return ordered[i].Account.Address < ordered[j].Account.Address
+	})
+	for _, d := range ordered {
 		ugnot := whole(d.Ugnot.String())
-
 		if ugnot != "0" {
 			line := fmt.Sprintf("%s:%s=%sugnot\n", d.Account.Address, d.GnoAddress, ugnot)
 			_, err := gw.Write([]byte(line))
@@ -104,6 +122,83 @@ func main() {
 			}
 		}
 	}
+}
+
+var aibCosmosAddrs = []string{
+	"cosmos15hmqrc245kryaehxlch7scl9d9znxa58qkpjet",
+	"cosmos17g3gk5ymjt35wre4p57hfvmex36jcedtd3hfal",
+	"cosmos17v7h4wdvjzkg09qmzyvf5w70tpnjgvekndfk4u",
+}
+
+var aibAtomeAddrs = []string{
+	"atone1k8ca4pnvy8k5t22hmfzvyzl9v9d54vdvr9yyj7",
+	"atone12n3pqter204ks5mfzdtsz0hv2tr9cqmexn2l3m",
+}
+
+func processNTMultisig(dist map[string]Distribution) {
+	total := types.ZeroDec()
+	total = processAddrs(total, aibCosmosAddrs, dist, "cosmos")
+	total = processAddrs(total, aibAtomeAddrs, dist, "atone")
+
+	dist[MULTISIG_AIB_ADDRESS] = Distribution{
+		Account: Account{
+			Address: MULTISIG_AIB_ADDRESS,
+		},
+		GnoAddress: MULTISIG_AIB_ADDRESS,
+		Ugnot:      total,
+	}
+
+	fmt.Printf("total on multisig: %s\n", total.String())
+}
+
+func processAddrs(total types.Dec, addrs []string, dist map[string]Distribution, prefix string) types.Dec {
+	for _, addr := range addrs {
+		gaddr, err := convertAddress(addr, prefix)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("processing aib address %s with gno address %s\n", addr, gaddr)
+
+		d, ok := dist[gaddr]
+		if !ok {
+			fmt.Printf("aib address %s not found in distribution\n", addr)
+			continue
+		}
+
+		total = total.Add(d.Ugnot)
+		delete(dist, gaddr)
+	}
+
+	return total
+}
+
+func mergeDistributions(dist1, dist2 map[string]Distribution) map[string]Distribution {
+	merged := make(map[string]Distribution)
+	for k, v1 := range dist1 {
+		v2, ok := dist2[k]
+		if ok {
+			fmt.Printf("merging address %s from %s with weight %d and %s with weight %d \n",
+				truncateMiddle(k, 15),
+				truncateMiddle(v1.Account.Address, 15), v1.Weight,
+				truncateMiddle(v2.Account.Address, 15), v2.Weight,
+			)
+			v1.Weight += v2.Weight
+		}
+		// note that we keep v1 Account only if they are the same gno address
+		merged[k] = v1
+	}
+
+	// add remaining from dist2
+	for k, v2 := range dist2 {
+		if _, ok := dist1[k]; ok {
+			continue
+		}
+
+		merged[k] = v2
+	}
+
+	return merged
 }
 
 // drops decimals
@@ -118,8 +213,8 @@ func whole(s string) string {
 
 // assign weight as uatom to each account and return the total weight
 
-func qualify(accounts []Account) ([]Distribution, int) {
-	dist := []Distribution{}
+func qualify(accounts []Account) (map[string]Distribution, int) {
+	dist := make(map[string]Distribution)
 
 	total := 0
 	for _, a := range accounts {
@@ -154,7 +249,7 @@ func qualify(accounts []Account) ([]Distribution, int) {
 		}
 
 		w := weight(a.Vote, uatoms, duatoms)
-		gnoAddress, err := convertAddress(a.Address)
+		gnoAddress, err := convertAddress(a.Address, "cosmos")
 		if err != nil {
 			panic(err)
 		}
@@ -166,7 +261,7 @@ func qualify(accounts []Account) ([]Distribution, int) {
 			Ugnot:      types.ZeroDec(),
 		}
 
-		dist = append(dist, d)
+		dist[gnoAddress] = d
 		if w > 0 {
 			total += w
 		}
@@ -176,11 +271,11 @@ func qualify(accounts []Account) ([]Distribution, int) {
 	return dist, total
 }
 
-func distribute(dist []Distribution, totalWeight int) []Distribution {
+func distribute(dist map[string]Distribution, totalWeight int, totalTokens int64) map[string]Distribution {
 	tWeight := types.NewDec(int64(totalWeight))
-	tAirdrop := types.NewDec(int64(TOTAL_AIRDROP))
+	tAirdrop := types.NewDec(totalTokens)
 
-	for i, d := range dist {
+	for k, d := range dist {
 		/*
 			// 1:1 mapping between weight and Ugnot token. It is easy to verify by users.
 			// they don't need know total and percentage to know their own numebr based on rules.
@@ -196,8 +291,7 @@ func distribute(dist []Distribution, totalWeight int) []Distribution {
 		gnot := w.Quo(tWeight).Mul(tAirdrop)
 		ugnot := gnot.Mul(types.NewDec(int64(1000000)))
 		d.Ugnot = ugnot
-		dist[i] = d
-
+		dist[k] = d
 	}
 
 	return dist
@@ -231,10 +325,10 @@ func weight(vote string, uatom int, duatom int) int {
 	return weight
 }
 
-func convertAddress(cosmosAddress string) (string, error) {
+func convertAddress(cosmosAddress string, prefix string) (string, error) {
 	// To debug, we can comment out this section and just return cosmos address
 
-	bz, err := crypto.GetFromBech32(cosmosAddress, "cosmos")
+	bz, err := crypto.GetFromBech32(cosmosAddress, prefix)
 	if err != nil {
 		return "", err
 	}
@@ -257,27 +351,6 @@ func skip(address string) bool {
 	// skip ibc escrow address
 	if ibcEscrowAddress[address] {
 		// return true
-	}
-
-	//identify  and skip module account
-	/*
-	   cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh: 184285143502836 uatom
-	   cosmos1tygms3xhhs3yv487phx3dw4a95jn7t7lpm470r: 9579821953422 uatom
-	   cosmos1jv65s3grqf6v6jl3dp4t6c9t9rk99cd88lyufl: 5273424739633 uatom
-	   cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta: 7616728 uatom
-	*/
-
-	module := []string{
-		"cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
-		"cosmos1tygms3xhhs3yv487phx3dw4a95jn7t7lpm470r",
-		"cosmos1jv65s3grqf6v6jl3dp4t6c9t9rk99cd88lyufl",
-		"cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta",
-	}
-
-	for _, v := range module {
-		if address == v {
-			return true
-		}
 	}
 
 	return false
@@ -319,4 +392,25 @@ func loadExcludedAddresses() {
 			excludedAddresses[addr] = true
 		}
 	}
+}
+
+// truncateMiddle truncates a string to maxLen runes with "..." in the middle
+func truncateMiddle(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
+		return s
+	}
+
+	ellipsis := "..."
+	ellipsisLen := len([]rune(ellipsis))
+
+	if maxLen <= ellipsisLen {
+		return ellipsis[:maxLen]
+	}
+
+	remaining := maxLen - ellipsisLen
+	frontLen := (remaining + 1) / 2
+	backLen := remaining - frontLen
+
+	return string(runes[:frontLen]) + ellipsis + string(runes[len(runes)-backLen:])
 }

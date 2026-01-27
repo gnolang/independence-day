@@ -43,6 +43,24 @@ last_vote_pro69.json:
 
    [instruction](https://github.com/piux2/gnobounty7/blob/main/README3.md#export--last_vote_pro69-as-json)
 
+snapshot_consolidated_atone.json:
+
+   mkdir -p data/gno-airdrop
+
+   jq '.app_state.staking.delegations' atomone-1_6439117.json > data/gno-airdrop/delegations.json
+
+   jq '.app_state.staking.validators' atomone-1_6439117.json > data/gno-airdrop/validators.json
+
+   jq --argjson limit $(jq '.app_state.staking.params.max_validators' atomone-1_6439117.json) '[.[] | select(.status == "BOND_STATUS_BONDED")] | sort_by(.tokens|tonumber) | reverse | .[:$limit]' data/gno-airdrop/validators.json > data/gno-airdrop/active_validators.json
+
+   jq '.app_state.bank.balances' atomone-1_6439117.json > data/gno-airdrop/balances.json
+
+   jq '.app_state.auth' atomone-1_6439117.json > data/gno-airdrop/auth_genesis.json
+
+   git clone https://github.com/atomone-hub/govbox.git
+
+   cd govbox/ && go run . gno-accounts ../data/gno-airdrop
+
 #### Notes:
 
 * duatom amount delegations shares are retrieved from multiple validators according to each validator's token share ratio, a.k.a exchange rates. Some validators got slashed in the past, they the token share ratio less than 1.
