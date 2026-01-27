@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bufio"
+	"compress/gzip"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/types"
-	osm "github.com/gnolang/gno/pkgs/os"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -99,8 +104,8 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 455794000000, dist[0].Weight)
 	assert.Equal(t, 8081636500000, dist[1].Weight)
 	assert.Equal(t, 8537430500000, totalWeight)
-	assert.Equal(t, "40040794475574", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "709959205524425", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "37371408177202", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "662628591822797", whole(dist[1].Ugnot.String()))
 
 	// tiny portion
 	accounts = append(accounts, a3)
@@ -112,24 +117,38 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 1, dist[2].Weight)
 	assert.Equal(t, 8537430500001, totalWeight)
 
-	assert.Equal(t, "40040794475569", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "709959205524342", whole(dist[1].Ugnot.String()))
-	assert.Equal(t, "87", whole(dist[2].Ugnot.String()))
+	assert.Equal(t, "37371408177198", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "662628591822719", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "81", whole(dist[2].Ugnot.String()))
 }
 
 func TestTotal(t *testing.T) {
-	bz := osm.MustReadFile("genbalance.txt")
+	bz, err := os.Open("genbalance.txt.gz")
+	require.NoError(t, err)
 
-	line := strings.TrimSuffix(string(bz), "\n")
+	zbz, err := gzip.NewReader(bz)
+	require.NoError(t, err)
 
-	balances := strings.Split(line, "\n")
+	t.Cleanup(func() {
+		zbz.Close()
+		bz.Close()
+	})
+
+	br := bufio.NewReader(zbz)
 
 	sum := types.ZeroDec()
+	for {
+		line, err := br.ReadString('\n')
+		if errors.Is(err, io.EOF) {
+			break
+		}
 
-	for _, v := range balances {
+		require.NoError(t, err)
+		line = strings.TrimSuffix(line, "\n")
+
 		// cosmos10008uvk6fj3ja05u092ya5sx6fn355wavael4j:g10008uvk6fj3ja05u092ya5sx6fn355walp9u5k=3204884ugnot
 		// split and drop cosmos address
-		a := strings.Split(v, ":")
+		a := strings.Split(line, ":")
 		parts := strings.Split(a[1], "=")
 		if len(parts) != 2 {
 			fmt.Printf("error in parsing: %v\n", parts)
@@ -144,8 +163,7 @@ func TestTotal(t *testing.T) {
 
 		amount_dec := types.NewDec(int64(amount_i))
 		sum = sum.Add(amount_dec)
-
 	}
 
-	assert.Equal(t, "749999999663089.000000000000000000", sum.String())
+	require.Equal(t, "699999999676645.000000000000000000", sum.String())
 }
