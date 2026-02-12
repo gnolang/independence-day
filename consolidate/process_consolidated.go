@@ -35,9 +35,9 @@ type Distribution struct {
 }
 
 // total 1,000,000,000 gnot
-// Air drop 70%
+// Air drop 35%
 
-const TOTAL_AIRDROP = 700000000
+const TOTAL_AIRDROP = 350000000
 
 var ibcEscrowAddress = map[string]bool{}
 var excludedAddresses = map[string]bool{}
