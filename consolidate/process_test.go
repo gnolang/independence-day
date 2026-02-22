@@ -165,5 +165,10 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	require.Equal(t, "699999999676645.000000000000000000", sum.String())
+	// sum must not exceed the total airdrop, and rounding loss (whole() truncation
+	// per account) must be less than 1 gnot (1_000_000 ugnot).
+	totalUgnot := types.NewDec(int64(TOTAL_AIRDROP) * 1000000)
+	require.True(t, sum.LTE(totalUgnot), "sum %s exceeds total airdrop %s", sum, totalUgnot)
+	require.True(t, totalUgnot.Sub(sum).LTE(types.NewDec(1000000)),
+		"rounding loss %s exceeds 1 gnot; total=%s sum=%s", totalUgnot.Sub(sum), totalUgnot, sum)
 }
