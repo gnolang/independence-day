@@ -104,8 +104,8 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 455794000000, dist[0].Weight)
 	assert.Equal(t, 8081636500000, dist[1].Weight)
 	assert.Equal(t, 8537430500000, totalWeight)
-	assert.Equal(t, "37371408177202", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "662628591822797", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "18685704088601", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "331314295911398", whole(dist[1].Ugnot.String()))
 
 	// tiny portion
 	accounts = append(accounts, a3)
@@ -117,9 +117,9 @@ func TestDistribute(t *testing.T) {
 	assert.Equal(t, 1, dist[2].Weight)
 	assert.Equal(t, 8537430500001, totalWeight)
 
-	assert.Equal(t, "37371408177198", whole(dist[0].Ugnot.String()))
-	assert.Equal(t, "662628591822719", whole(dist[1].Ugnot.String()))
-	assert.Equal(t, "81", whole(dist[2].Ugnot.String()))
+	assert.Equal(t, "18685704088599", whole(dist[0].Ugnot.String()))
+	assert.Equal(t, "331314295911359", whole(dist[1].Ugnot.String()))
+	assert.Equal(t, "40", whole(dist[2].Ugnot.String()))
 }
 
 func TestTotal(t *testing.T) {
