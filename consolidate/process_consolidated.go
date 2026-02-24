@@ -39,7 +39,7 @@ const (
 	TOTAL_AIRDROP_ATONE    = 231000000
 	TOTAL_AIRDROP_CONTRIBS = 119000000
 
-	MULTISIG_AIB_ADDRESS = "g1multisigaddressxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	MULTISIG_NT_ADDRESS = "g1multisigaddressxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 )
 
 var ibcEscrowAddress = map[string]bool{}
@@ -86,13 +86,15 @@ func main() {
 	atomDist, totalAtom := qualify(accounts)
 	atomDistributed := distribute(atomDist, totalAtom, TOTAL_AIRDROP_ATOM)
 
+	processNTMultisig(atomDistributed, "cosmos", aibCosmosAddrs)
+
 	// Atone processing
 	atoneDist, totalAtone := processAtone()
 	atoneDistributed := distribute(atoneDist, totalAtone, TOTAL_AIRDROP_ATONE)
 
-	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
+	processNTMultisig(atoneDistributed, "atone", aibAtomeAddrs)
 
-	processNTMultisig(totalDist)
+	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
 
 	// Create gzipped file
 	outputFile, err := os.Create("genbalance.txt.gz")
@@ -128,23 +130,30 @@ var aibCosmosAddrs = []string{
 	"cosmos15hmqrc245kryaehxlch7scl9d9znxa58qkpjet",
 	"cosmos17g3gk5ymjt35wre4p57hfvmex36jcedtd3hfal",
 	"cosmos17v7h4wdvjzkg09qmzyvf5w70tpnjgvekndfk4u",
+	"cosmos1k8ca4pnvy8k5t22hmfzvyzl9v9d54vdvd9cryx",
+	"cosmos12n3pqter204ks5mfzdtsz0hv2tr9cqmegnkc8r",
+	"cosmos1pu9ssyptk3fym7hawerv5tnfqenr3c0d92hl7a",
+	"cosmos1cxt79zavgr9qvqfx9hjsr9aqvpx7ftan8heqc6",
 }
 
 var aibAtomeAddrs = []string{
+	"atone15hmqrc245kryaehxlch7scl9d9znxa58wka40n",
 	"atone1k8ca4pnvy8k5t22hmfzvyzl9v9d54vdvr9yyj7",
 	"atone12n3pqter204ks5mfzdtsz0hv2tr9cqmexn2l3m",
+
+	"atone17g3gk5ymjt35wre4p57hfvmex36jcedtr3twt8", // derived from cosmos17g3gk5ymjt35wre4p57hfvmex36jcedtd3hfal
+	"atone17v7h4wdvjzkg09qmzyvf5w70tpnjgvekad43ry", // derived from cosmos17v7h4wdvjzkg09qmzyvf5w70tpnjgvekndfk4u
+	"atone1cxt79zavgr9qvqfx9hjsr9aqvpx7ftanfh98wz",
 }
 
-func processNTMultisig(dist map[string]Distribution) {
+func processNTMultisig(dist map[string]Distribution, prefix string, addrs []string) {
 	total := types.ZeroDec()
-	total = processAddrs(total, aibCosmosAddrs, dist, "cosmos")
-	total = processAddrs(total, aibAtomeAddrs, dist, "atone")
-
-	dist[MULTISIG_AIB_ADDRESS] = Distribution{
+	total = processAddrs(total, addrs, dist, prefix)
+	dist[MULTISIG_NT_ADDRESS] = Distribution{
 		Account: Account{
-			Address: MULTISIG_AIB_ADDRESS,
+			Address: MULTISIG_NT_ADDRESS,
 		},
-		GnoAddress: MULTISIG_AIB_ADDRESS,
+		GnoAddress: MULTISIG_NT_ADDRESS,
 		Ugnot:      total,
 	}
 
@@ -184,6 +193,7 @@ func mergeDistributions(dist1, dist2 map[string]Distribution) map[string]Distrib
 				truncateMiddle(v2.Account.Address, 15), v2.Weight,
 			)
 			v1.Weight += v2.Weight
+			v1.Ugnot = v1.Ugnot.Add(v2.Ugnot)
 		}
 		// note that we keep v1 Account only if they are the same gno address
 		merged[k] = v1

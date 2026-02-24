@@ -169,7 +169,7 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	expected := types.MustNewDecFromStr("464584431185811.000000000000000000")
+	expected := types.MustNewDecFromStr("580999998384299.000000000000000000")
 	delta := types.NewDec(10)
 	diff := sum.Sub(expected).Abs()
 
