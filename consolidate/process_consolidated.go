@@ -39,7 +39,8 @@ const (
 	TOTAL_AIRDROP_ATONE    = 231000000
 	TOTAL_AIRDROP_CONTRIBS = 119000000
 
-	MULTISIG_NT_ADDRESS = "g1multisigaddressxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	MULTISIG_NT_ADDRESS     = "g1multisigaddressxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	MULTISIG_GOVDAO_ADDRESS = "g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh"
 )
 
 var ibcEscrowAddress = map[string]bool{}
@@ -95,6 +96,15 @@ func main() {
 	processNTMultisig(atoneDistributed, "atone", aibAtomeAddrs)
 
 	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
+
+	// Allocate contributions budget to GovDAO multisig
+	totalDist[MULTISIG_GOVDAO_ADDRESS] = Distribution{
+		Account: Account{
+			Address: MULTISIG_GOVDAO_ADDRESS,
+		},
+		GnoAddress: MULTISIG_GOVDAO_ADDRESS,
+		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_CONTRIBS) * 1000000),
+	}
 
 	// Create gzipped file
 	outputFile, err := os.Create("genbalance.txt.gz")
