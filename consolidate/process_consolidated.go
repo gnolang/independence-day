@@ -39,7 +39,7 @@ const (
 	TOTAL_AIRDROP_ATONE    = 231000000
 	TOTAL_AIRDROP_CONTRIBS = 119000000
 
-	MULTISIG_NT_ADDRESS     = "g1multisigaddressxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+	MULTISIG_NT_ADDRESS     = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2
 	MULTISIG_GOVDAO_ADDRESS = "g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh"
 )
 
