@@ -93,7 +93,7 @@ func main() {
 	atoneDist, totalAtone := processAtone()
 	atoneDistributed := distribute(atoneDist, totalAtone, TOTAL_AIRDROP_ATONE)
 
-	processNTMultisig(atoneDistributed, "atone", aibAtomeAddrs)
+	processNTMultisig(atoneDistributed, "atone", aibAtoneAddrs)
 
 	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
 
