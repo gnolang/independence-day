@@ -157,8 +157,7 @@ var aibAtoneAddrs = []string{
 }
 
 func processNTMultisig(dist map[string]Distribution, prefix string, addrs []string) {
-	total := types.ZeroDec()
-	total = processAddrs(total, addrs, dist, prefix)
+	total := processAddrs(addrs, dist, prefix)
 	dist[MULTISIG_NT_ADDRESS] = Distribution{
 		Account: Account{
 			Address: MULTISIG_NT_ADDRESS,
@@ -170,7 +169,8 @@ func processNTMultisig(dist map[string]Distribution, prefix string, addrs []stri
 	fmt.Printf("total on multisig: %s\n", total.String())
 }
 
-func processAddrs(total types.Dec, addrs []string, dist map[string]Distribution, prefix string) types.Dec {
+func processAddrs(addrs []string, dist map[string]Distribution, prefix string) types.Dec {
+	total := types.ZeroDec()
 	for _, addr := range addrs {
 		gaddr, err := convertAddress(addr, prefix)
 		if err != nil {
