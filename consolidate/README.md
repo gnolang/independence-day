@@ -45,6 +45,7 @@ last_vote_pro69.json:
 
 snapshot_consolidated_atone.json:
 
+```
    mkdir -p data/gno-airdrop
 
    jq '.app_state.staking.delegations' atomone-1_6439117.json > data/gno-airdrop/delegations.json
@@ -60,6 +61,7 @@ snapshot_consolidated_atone.json:
    git clone https://github.com/atomone-hub/govbox.git
 
    cd govbox/ && go run . gno-accounts ../data/gno-airdrop
+```
 
 #### Notes:
 
