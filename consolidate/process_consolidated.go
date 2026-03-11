@@ -146,7 +146,7 @@ var aibCosmosAddrs = []string{
 	"cosmos1cxt79zavgr9qvqfx9hjsr9aqvpx7ftan8heqc6",
 }
 
-var aibAtomeAddrs = []string{
+var aibAtoneAddrs = []string{
 	"atone15hmqrc245kryaehxlch7scl9d9znxa58wka40n",
 	"atone1k8ca4pnvy8k5t22hmfzvyzl9v9d54vdvr9yyj7",
 	"atone12n3pqter204ks5mfzdtsz0hv2tr9cqmexn2l3m",
