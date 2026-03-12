@@ -304,7 +304,8 @@ func qualify(accounts []Account) (map[string]Distribution, int) {
 		w := weight(a.Vote, uatoms, duatoms)
 		gnoAddress, err := convertAddress(a.Address, "cosmos")
 		if err != nil {
-			panic(err)
+			fmt.Printf("skipping address %s: %s\n", a.Address, err)
+			continue
 		}
 
 		d := Distribution{
@@ -379,15 +380,16 @@ func weight(vote string, uatom int, duatom int) int {
 }
 
 func convertAddress(cosmosAddress string, prefix string) (string, error) {
-	// To debug, we can comment out this section and just return cosmos address
-
 	bz, err := crypto.GetFromBech32(cosmosAddress, prefix)
 	if err != nil {
 		return "", err
 	}
 
-	gnoAddress, err2 := bech32.Encode("g", bz)
+	if len(bz) != 20 {
+		return "", fmt.Errorf("address %s has %d bytes, expected 20 bytes", cosmosAddress, len(bz))
+	}
 
+	gnoAddress, err2 := bech32.Encode("g", bz)
 	if err2 != nil {
 		return "", err2
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -74,7 +75,8 @@ func qualifyAtone(accounts []Account) (dist map[string]Distribution, total int) 
 
 		gnoAddress, err := convertAddress(a.Address, "atone")
 		if err != nil {
-			panic(err)
+			fmt.Printf("skipping address %s: %s\n", a.Address, err)
+			continue
 		}
 
 		d := Distribution{
