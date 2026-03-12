@@ -35,16 +35,15 @@ type Distribution struct {
 }
 
 const (
-	TOTAL_AIRDROP_ATOM     = 350000000
-	TOTAL_AIRDROP_ATONE    = 231000000
-	TOTAL_AIRDROP_CONTRIBS = 119000000
-
+	TOTAL_AIRDROP_ATOM            = 350000000
+	TOTAL_AIRDROP_ATONE           = 231000000
+	TOTAL_AIRDROP_CONTRIBS        = 119000000
 	TOTAL_AIRDROP_NT              = 300000000
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
 
-	MULTISIG_NT1_ADDRESS = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
-	MULTISIG_NT2_ADDRESS      = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
-	MULTISIG_GOVDAO_ADDRESS  = "g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh" // govdao t1
+	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
+	MULTISIG_NT2_ADDRESS    = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
+	MULTISIG_GOVDAO_ADDRESS = "g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh" // govdao t1
 )
 
 var ibcEscrowAddress = map[string]bool{}
@@ -111,11 +110,11 @@ func main() {
 	}
 
 	// Allocate NT budget to NT main multisig
-	totalDist[MULTISIG_NT_MAIN_ADDRESS] = Distribution{
+	totalDist[MULTISIG_NT1_ADDRESS] = Distribution{
 		Account: Account{
-			Address: MULTISIG_NT_MAIN_ADDRESS,
+			Address: MULTISIG_NT1_ADDRESS,
 		},
-		GnoAddress: MULTISIG_NT_MAIN_ADDRESS,
+		GnoAddress: MULTISIG_NT1_ADDRESS,
 		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_NT) * 1000000),
 	}
 
@@ -192,11 +191,11 @@ var aibAtoneAddrs = []string{
 
 func processNTMultisig(dist map[string]Distribution, prefix string, addrs []string) {
 	total := processAddrs(addrs, dist, prefix)
-	dist[MULTISIG_NT_ADDRESS] = Distribution{
+	dist[MULTISIG_NT2_ADDRESS] = Distribution{
 		Account: Account{
-			Address: MULTISIG_NT_ADDRESS,
+			Address: MULTISIG_NT2_ADDRESS,
 		},
-		GnoAddress: MULTISIG_NT_ADDRESS,
+		GnoAddress: MULTISIG_NT2_ADDRESS,
 		Ugnot:      total,
 	}
 
