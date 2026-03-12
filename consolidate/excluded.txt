@@ -4,6 +4,10 @@ cosmos14lultfckehtszvzw4ehu0apvsr77afvyhgqhwh # DokiaCapital
 cosmos1dtq0y9reqst7d99fd3c7x6dflh4eazm4ha8qqh # DokiaCapital
 cosmos19aqfqnjd88z3842muc5jfhqy09xwr469dlexfk # DokiaCapital
 
+cosmos1z8mzakma7vnaajysmtkwt4wgjqr2m84tzvyfkz # ICF
+cosmos1unc788q8md2jymsns24eyhua58palg5kc7cstv # ICF
+cosmos1sufkm72dw7ua9crpfhhp0dqpyuggtlhdse98e7 # ICF
+
 # identify  and skip module account
 
 cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh # 184285143502836 uatom
