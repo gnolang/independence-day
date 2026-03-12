@@ -43,7 +43,7 @@ const (
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
 
 	MULTISIG_NT_MAIN_ADDRESS = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
-	MULTISIG_NT_ADDRESS      = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
+	MULTISIG_NT2_ADDRESS      = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
 	MULTISIG_GOVDAO_ADDRESS  = "g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh" //gnoland contributors
 )
 
