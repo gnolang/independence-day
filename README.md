@@ -90,11 +90,11 @@ consolidate/        Scripts and data for computing per-address GNOT weights
 mkgenesis/          Final genesis balance file
 prop69/             Raw prop 69 vote data (votes.csv, votes-unique.csv)
 snapshot/           Instructions for taking a Cosmos Hub full-node snapshot
-special-accounts.csv  Addresses excluded from the airdrop (CEX, custodial, etc.)
+special-accounts.csv  Non-individual addresses potentially excluded from the airdrop (CEX, custodial, etc.)
 ```
 
 ## Contributions
 
-* https://github.com/gnolang/gno/pull/3, https://github.com/gnolang/gno/pull/6, https://github.com/gnolang/gno/pull/7, https://github.com/gnolang/gno/pull/11 - @piux2, big part of the initial version of the airdrop generator.
-* https://github.com/gnolang/gno/pull/17 - @KorNatten, update special address list.
+* https://github.com/gnolang/independence-day/pull/3, https://github.com/gnolang/independence-day/pull/6, https://github.com/gnolang/independence-day/pull/7, https://github.com/gnolang/independence-day/pull/11 - @piux2, big part of the initial version of the airdrop generator.
+* https://github.com/gnolang/independence-day/pull/17 - @KorNatten, update special address list.
 * 0xAN|Nodes.Guru `g1jj32fhrz6awxupdw5na244nxutjk99xk847wm2` for the 5/20 export.
