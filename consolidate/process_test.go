@@ -34,6 +34,19 @@ var (
 
 const TOTAL_AIRDROP_TESTS = 700000000
 
+func TestFinalizedSupplyConstants(t *testing.T) {
+	assert.Equal(t, 632000000, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
+	assert.Equal(t, 120000000, TOTAL_AIRDROP_CONTRIBS+TOTAL_AIRDROP_GOVDAO_FOUNDERS)
+	assert.Equal(t, 1333000000,
+		TOTAL_AIRDROP_ATOM+
+			TOTAL_AIRDROP_ATONE+
+			TOTAL_AIRDROP_NT+
+			TOTAL_AIRDROP_NT_LLC+
+			TOTAL_AIRDROP_CONTRIBS+
+			TOTAL_AIRDROP_GOVDAO_FOUNDERS,
+	)
+}
+
 func TestConvertAddress(t *testing.T) {
 	test2, err := convertAddress(test2_address_cosmos, "cosmos")
 	assert.NoError(t, err)
@@ -205,7 +218,7 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	expected := types.MustNewDecFromStr("1000007000000000.000000000000000000")
+	expected := types.MustNewDecFromStr("1333000000000000.000000000000000000")
 	delta := expected.Mul(types.NewDecWithPrec(1, 4)) // 0.01%
 	diff := sum.Sub(expected).Abs()
 

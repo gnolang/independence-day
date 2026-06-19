@@ -37,8 +37,9 @@ type Distribution struct {
 const (
 	TOTAL_AIRDROP_ATOM            = 350000000
 	TOTAL_AIRDROP_ATONE           = 231000000
-	TOTAL_AIRDROP_CONTRIBS        = 119000000
+	TOTAL_AIRDROP_CONTRIBS        = 119993000
 	TOTAL_AIRDROP_NT              = 300000000
+	TOTAL_AIRDROP_NT_LLC          = 332000000
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
 
 	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
@@ -115,7 +116,7 @@ func main() {
 			Address: MULTISIG_NT1_ADDRESS,
 		},
 		GnoAddress: MULTISIG_NT1_ADDRESS,
-		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_NT) * 1000000),
+		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC) * 1000000),
 	}
 
 	// Allocate GovDAO founders budget (1000 GNOT each)
