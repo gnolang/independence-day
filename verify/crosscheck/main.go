@@ -58,8 +58,11 @@ func (b *balanceFile) compare(other *balanceFile) bool {
 		}
 	}
 
+	// NOTE: this used to read `other.balances[address]` on both sides, so the
+	// condition was always false and addresses missing from b were never
+	// reported. Fixed to look them up in b.
 	for address := range other.balances {
-		if _, exists := other.balances[address]; !exists {
+		if _, exists := b.balances[address]; !exists {
 			diff = true
 			fmt.Printf("Address %s found in %s but not in %s\n", address, other.filename, b.filename)
 		}
@@ -139,15 +142,26 @@ func parseBalanceFile(filename string, parseLine parserFunc) (*balanceFile, erro
 	}, nil
 }
 
-// Convert a Cosmos address to a Gno address.
-func cosmosAddressToGnoAddress(cosmosAddr string) (string, error) {
-	prefix, addr, err := bech32.Decode(cosmosAddr)
+// sourcePrefixes are the human-readable parts that may appear in the source
+// column of genbalance.txt.gz: "cosmos" for the Cosmos Hub snapshot, "atone"
+// for AtomOne, and "g" for the ten synthetic rows (nt1, nt2, GovDAO T1 and the
+// seven founders), whose source column is already the gno address.
+var sourcePrefixes = map[string]bool{"cosmos": true, "atone": true, "g": true}
+
+// sourceAddressToGnoAddress re-derives the gno address from a source address by
+// re-encoding the same 20-byte payload with the "g" HRP.
+func sourceAddressToGnoAddress(sourceAddr string) (string, error) {
+	prefix, addr, err := bech32.Decode(sourceAddr)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode cosmos address: %w", err)
+		return "", fmt.Errorf("failed to decode source address: %w", err)
 	}
 
-	if prefix != "cosmos" {
-		return "", fmt.Errorf("unexpected prefix: %s, expected 'cosmos'", prefix)
+	if !sourcePrefixes[prefix] {
+		return "", fmt.Errorf("unexpected prefix %q in %s", prefix, sourceAddr)
+	}
+
+	if len(addr) != 20 {
+		return "", fmt.Errorf("address %s has %d bytes, expected 20", sourceAddr, len(addr))
 	}
 
 	gnoAddress, err := bech32.Encode("g", addr)
@@ -198,23 +212,30 @@ func parseGnoBalance(line string) (*gnoland.Balance, error) {
 	return &balance, nil
 }
 
+// parseConsolidateLine parses one row of genbalance.txt.gz, which has the form
+//
+//	<source_addr>:<gno_addr>=<amount>ugnot
+//
+// and independently re-derives <gno_addr> from <source_addr> to confirm the two
+// columns describe the same 20-byte key.
 func parseConsolidateLine(line string) (*gnoland.Balance, error) {
-	// Split the line into cosmos address and gno balance.
-	parts := strings.Split(line, ":")
-	cosmosAddr := parts[0]
+	sourceAddr, rest, ok := strings.Cut(line, ":")
+	if !ok {
+		return nil, fmt.Errorf("malformed line, expected <source>:<gno>=<amount>: %q", line)
+	}
 
-	gnoBalance, err := parseGnoBalance(parts[1])
+	gnoBalance, err := parseGnoBalance(rest)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse gno balance: %w", err)
 	}
 
-	// Check if the cosmos and associated gno addresses match.
-	converted, err := cosmosAddressToGnoAddress(cosmosAddr)
+	// Check that the source address and the gno address are the same key.
+	converted, err := sourceAddressToGnoAddress(sourceAddr)
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert cosmos address: %w", err)
+		return nil, fmt.Errorf("unable to convert source address: %w", err)
 	}
 	if converted != gnoBalance.Address.String() {
-		return nil, fmt.Errorf("cosmos address %s does not match gno address %s", cosmosAddr, gnoBalance.Address.String())
+		return nil, fmt.Errorf("source address %s does not match gno address %s", sourceAddr, gnoBalance.Address.String())
 	}
 
 	return gnoBalance, nil
@@ -236,12 +257,16 @@ func main() {
 	)
 
 	// Import all balance files using the parsers defined above.
+	//
+	// A parse failure is fatal. This used to `continue`, which then indexed
+	// balanceFiles[2] unconditionally and panicked with an index-out-of-range
+	// that buried the real error.
 	for _, parser := range parsers {
 		fmt.Printf("Importing balance file: %s\n", parser.filename)
 		balanceFile, err := parseBalanceFile(parser.filename, parser.parser)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error importing balance file %s: %v\n", parser.filename, err)
-			continue
+			os.Exit(1)
 		}
 
 		balanceFiles = append(balanceFiles, balanceFile)
@@ -252,7 +277,9 @@ func main() {
 	balanceFiles[2].addBalances(balanceFiles[1])
 
 	// Compare mkgenesis balance file with the consolidate balance file.
-	if !balanceFiles[0].compare(balanceFiles[2]) {
-		fmt.Println("Balance files match.")
+	if balanceFiles[0].compare(balanceFiles[2]) {
+		fmt.Fprintln(os.Stderr, "Balance files DIFFER.")
+		os.Exit(1)
 	}
+	fmt.Println("Balance files match.")
 }
