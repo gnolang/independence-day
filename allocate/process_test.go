@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -36,15 +37,95 @@ const TOTAL_AIRDROP_TESTS = 700000000
 
 func TestFinalizedSupplyConstants(t *testing.T) {
 	assert.Equal(t, 632000000, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
-	assert.Equal(t, 120000000, TOTAL_AIRDROP_CONTRIBS+TOTAL_AIRDROP_GOVDAO_FOUNDERS)
-	assert.Equal(t, 1333000000,
+
+	// The cap covers everything that lands in mkgenesis/balances.txt.gz, which
+	// is the buckets PLUS the non-airdrop premine. The previous version of this
+	// test summed only the buckets, which is why a 2,455,000 GNOT overshoot in
+	// the shipped file could pass CI.
+	assert.Equal(t, TOTAL_SUPPLY,
 		TOTAL_AIRDROP_ATOM+
 			TOTAL_AIRDROP_ATONE+
 			TOTAL_AIRDROP_NT+
 			TOTAL_AIRDROP_NT_LLC+
 			TOTAL_AIRDROP_CONTRIBS+
-			TOTAL_AIRDROP_GOVDAO_FOUNDERS,
+			TOTAL_AIRDROP_GOVDAO_FOUNDERS+
+			TOTAL_PREMINE_NON_AIRDROP,
 	)
+}
+
+// TestPremineMatchesFile keeps TOTAL_PREMINE_NON_AIRDROP honest against the
+// actual contents of mkgenesis/non-airdrop.txt.
+func TestPremineMatchesFile(t *testing.T) {
+	f, err := os.Open(nonAirdropFile)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	var sum int64
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(strings.Split(sc.Text(), "#")[0])
+		if line == "" {
+			continue
+		}
+		_, amount, ok := strings.Cut(line, "=")
+		require.True(t, ok, "malformed premine line: %q", line)
+		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
+		require.NoError(t, err)
+		sum += v
+	}
+	require.NoError(t, sc.Err())
+
+	assert.Equal(t, int64(TOTAL_PREMINE_NON_AIRDROP)*1000000, sum,
+		"TOTAL_PREMINE_NON_AIRDROP is out of date with %s", nonAirdropFile)
+}
+
+// TestGenesisFileTotal asserts the EXACT ugnot total of the file that
+// gnolang/gno actually downloads. Nothing tested this before: TestTotal covers
+// genbalance.txt.gz only, so mkgenesis/balances.txt.gz could be — and was —
+// left stale by a constant change while CI stayed green.
+//
+// The expected figure is the cap minus the truncation residual, which is a
+// property of the data and cannot be derived from the constants alone.
+func TestGenesisFileTotal(t *testing.T) {
+	const expected = int64(1332999998378908) // 1,333,000,000 GNOT − 1.621092 truncation
+
+	f, err := os.Open(balancesFile)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	zr, err := gzip.NewReader(f)
+	require.NoError(t, err)
+	t.Cleanup(func() { zr.Close() })
+
+	var (
+		sum   int64
+		rows  int
+		seen  = make(map[string]struct{})
+		valid = regexp.MustCompile(`^g1[0-9a-z]{38}=[0-9]+ugnot$`)
+	)
+	sc := bufio.NewScanner(zr)
+	for sc.Scan() {
+		line := sc.Text()
+		rows++
+		require.True(t, valid.MatchString(line), "malformed row %d: %q", rows, line)
+
+		addr, amount, _ := strings.Cut(line, "=")
+		if _, dup := seen[addr]; dup {
+			t.Fatalf("duplicate address %s", addr)
+		}
+		seen[addr] = struct{}{}
+
+		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
+		require.NoError(t, err)
+		require.NotZero(t, v, "zero-balance row %d: %q", rows, line)
+		sum += v
+	}
+	require.NoError(t, sc.Err())
+
+	assert.Equal(t, expected, sum,
+		"%s total is wrong — did you change a constant without running `make` from the repo root?",
+		balancesFile)
+	t.Logf("%s: %d rows, %d ugnot (%.6f GNOT)", balancesFile, rows, sum, float64(sum)/1e6)
 }
 
 func TestConvertAddress(t *testing.T) {
@@ -218,7 +299,11 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	expected := types.MustNewDecFromStr("1333000000000000.000000000000000000")
+	// genbalance.txt.gz carries the buckets only; the premine is added later by
+	// mkgenesis. Derived from the constants so that flipping
+	// PREMINE_ABSORBED_FROM_CONTRIBS does not silently break this test.
+	// The exact total of the SHIPPED file is asserted by TestGenesisFileTotal.
+	expected := types.NewDec(int64(TOTAL_SUPPLY-TOTAL_PREMINE_NON_AIRDROP) * 1000000)
 	delta := expected.Mul(types.NewDecWithPrec(1, 4)) // 0.01%
 	diff := sum.Sub(expected).Abs()
 

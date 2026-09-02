@@ -7,8 +7,8 @@
 
 ## sum
 ```
-1002461998378908ugnot
-1002461998gnot
+1332999998378908ugnot
+1332999998gnot
 ```
 
 ## duplicate accounts
@@ -17,8 +17,8 @@
 
 ## top 100 accounts
 ```
-g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf=300000000000000ugnot
-g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh=119000000000000ugnot
+g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf=632000000000000ugnot
+g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh=117538000000000ugnot
 g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg=52453657798846ugnot
 g1p3ucd3ptpw902fluyjzhq3ffgq4ntddatev7s5=27940198365214ugnot
 g14lultfckehtszvzw4ehu0apvsr77afvyy5u50n=18268683530357ugnot
