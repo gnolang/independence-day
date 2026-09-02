@@ -228,9 +228,9 @@ type fileParser struct {
 func main() {
 	var (
 		parsers = []fileParser{
-			{"../mkgenesis/balances.txt.gz", parseGnoBalance},
-			{"../mkgenesis/non-airdrop.txt", parseGnoBalance},
-			{"../consolidate/genbalance.txt.gz", parseConsolidateLine},
+			{"../../mkgenesis/balances.txt.gz", parseGnoBalance},
+			{"../../mkgenesis/non-airdrop.txt", parseGnoBalance},
+			{"../../allocate/genbalance.txt.gz", parseConsolidateLine},
 		}
 		balanceFiles = make([]*balanceFile, 0, len(parsers))
 	)

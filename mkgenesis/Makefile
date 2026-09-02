@@ -4,13 +4,13 @@ re: clean all
 
 balances.txt.gz: balances.txt
 	rm -f balances.txt.gz
-	gzip -k balances.txt
+	gzip -n -k balances.txt
 
-balances.txt: non-airdrop.txt ../consolidate/genbalance.txt.gz
+balances.txt: non-airdrop.txt ../allocate/genbalance.txt.gz
 	# generate file
 	> $@.tmp
 	cat non-airdrop.txt | cut -d'#' -f1 | grep -vE '^\s*$$' >> $@.tmp
-	zcat ../consolidate/genbalance.txt.gz | cut -d: -f2 >> $@.tmp
+	zcat ../allocate/genbalance.txt.gz | cut -d: -f2 >> $@.tmp
 	cat $@.tmp  | sed 's/=/ /;s/ugnot//' | gawk '{seen[$$1] += $$2 } END {for (i in seen) printf "%s=%dugnot\n", i,seen[i]  }'   |sort -t = -k 2 -n -r > $@ 
 	rm -f $@.tmp
 
