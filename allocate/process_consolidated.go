@@ -34,6 +34,22 @@ type Distribution struct {
 	Ugnot      types.Dec `json:"ugnot"`
 }
 
+// Input files, relative to this directory. Snapshots and human-edited policy
+// files live outside allocate/ so that "what we were given" and "what we
+// decided" stay visibly separate from "how it is computed".
+//
+//	inputs/  — immutable chain snapshots, never edited after capture
+//	policy/  — human-editable decisions (exclusions, annotations)
+const (
+	cosmosSnapshotFile = "../inputs/cosmoshub-10562840.json.gz"
+	atoneSnapshotFile  = "../inputs/atomone-6439117.json.gz"
+	excludedFile       = "../policy/excluded.txt"
+	ibcEscrowFile      = "../policy/ibc-escrow-addresses.txt"
+
+	// outputFile is consumed by mkgenesis/Makefile.
+	outputFile = "genbalance.txt.gz"
+)
+
 const (
 	TOTAL_AIRDROP_ATOM            = 350000000
 	TOTAL_AIRDROP_ATONE           = 231000000
@@ -62,7 +78,7 @@ func main() {
 	var gzReader *gzip.Reader
 
 	// Read the compressed file
-	file, err = os.Open("snapshot_consolidated_10562840.json.gz")
+	file, err = os.Open(cosmosSnapshotFile)
 	if err != nil {
 		panic(err)
 	}
@@ -131,7 +147,7 @@ func main() {
 	}
 
 	// Create gzipped file
-	outputFile, err := os.Create("genbalance.txt.gz")
+	outputFile, err := os.Create(outputFile)
 	if err != nil {
 		panic(err)
 	}
@@ -413,7 +429,7 @@ func skip(address string) bool {
 }
 
 func loadEscrowAddress() {
-	content := osm.MustReadFile("ibc_escrow_address.txt")
+	content := osm.MustReadFile(ibcEscrowFile)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		if line == "" {
@@ -429,7 +445,7 @@ func loadEscrowAddress() {
 }
 
 func loadExcludedAddresses() {
-	content := osm.MustReadFile("excluded.txt")
+	content := osm.MustReadFile(excludedFile)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		// Trim whitespace

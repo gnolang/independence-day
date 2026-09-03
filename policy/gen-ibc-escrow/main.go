@@ -20,7 +20,7 @@ func main() {
 		fileData += fmt.Sprintf("%s:%s:%s\n", cosmAddr, gnoAddr, channel)
 	}
 
-	err := os.WriteFile("ibc_escrow_address.txt", []byte(fileData), 0644)
+	err := os.WriteFile("../ibc-escrow-addresses.txt", []byte(fileData), 0644)
 	if err != nil {
 		panic(err)
 	}

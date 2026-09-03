@@ -1,0 +1,36 @@
+name: tests
+
+# Runs on EVERY pull request, not just ones touching the allocation code.
+#
+# The previous version filtered on `consolidate/**`, which meant a PR that
+# changed a constant and regenerated genbalance.txt.gz but forgot mkgenesis/
+# passed CI green while leaving the repository internally inconsistent.
+# The cross-check below is precisely the check that catches that, so it must
+# not be path-filtered.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Unit tests
+        working-directory: ./allocate
+        run: go test -v ./...
+
+      - name: Cross-check balances.txt.gz == genbalance.txt.gz + non-airdrop.txt
+        working-directory: ./verify/crosscheck
+        run: |
+          go run . | tee /tmp/crosscheck.log
+          grep -q 'Balance files match.' /tmp/crosscheck.log
+
+      - name: Report supply totals
+        run: make supply

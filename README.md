@@ -1,121 +1,138 @@
 # independence-day
 
-> **Want to run a gnoland1 validator?** See the active deployment config:
-> **https://github.com/gnolang/gno/tree/chain/gnoland1/misc/deployments/gnoland1**
+**The auditable record of the GNOT genesis allocation.**
+
+This repository computes, from public chain snapshots and a published set of rules, how much GNOT every
+address receives at genesis. It produced the balance sheet that launched **gnoland1** — 3,262,505
+accounts — and every input, intermediate and script used to get there is committed here so that anyone
+can re-derive the numbers independently.
+
+> **Want to run a gnoland1 validator?** That lives elsewhere:
+> <https://github.com/gnolang/gno/tree/chain/gnoland1/misc/deployments/gnoland1>
 
 ---
 
-## What this repository is
+## Contents
 
-This repository was used to compute the initial GNOT token allocation for the **gnoland1** genesis block — the first mainnet launch of Gno.land.
-
-The work happened in two phases:
-
-1. **Snapshot & weighting** — a snapshot of Cosmos Hub (block 10562840, 2022-05-20) and AtomOne (block 6439117) was taken. Each address was assigned a weight based on liquid and delegated balances, adjusted by its vote on Cosmos Hub Proposal 69.
-2. **Balance generation** — weights were normalised against a fixed total supply (~1 billion GNOT) and written to `mkgenesis/balances.txt.gz`, which fed directly into the genesis block.
-
-The resulting genesis was used to launch **gnoland1** (chain ID `gnoland-1`). All source data, intermediate outputs, and processing scripts are preserved here for auditability — anyone can independently verify the resulting balances.
-
-Active chain configuration and validator onboarding live in the main monorepo:
-→ https://github.com/gnolang/gno/tree/chain/gnoland1/misc/deployments/gnoland1
+- [The allocation](#the-allocation)
+- [How your balance was computed](#how-your-balance-was-computed)
+- [Repository layout](#repository-layout)
+- [Reproducing the result](#reproducing-the-result)
+- [Verifying your own line](#verifying-your-own-line)
+- [Stable paths](#stable-paths--do-not-move-these)
+- [Credits](#credits)
 
 ---
 
-This repository contains the scripts and data used to compute the initial GNOT token allocation for the Gno.land genesis block. The goal is to distribute GNOT in a fair and transparent way, proportional to ATOM, ATONE and PHOTON holdings and weighted by participation in Cosmos Hub governance.
+## The allocation
 
-All source data, intermediate outputs, and processing scripts are included so anyone can independently verify the resulting balances.
+Constants live in one place: [`allocate/process_consolidated.go`](allocate/process_consolidated.go),
+in the `const` block at the top. They are the *only* place a bucket size is defined.
 
-## Allocation overview
+| Bucket | GNOT | Where it goes |
+|---|---:|---|
+| ATOM airdrop | 350,000,000 | Cosmos Hub ATOM holders, snapshot block 10562840 (2022-05-20 08:00 PDT) |
+| AtomOne airdrop | 231,000,000 | AtomOne ATONE/PHOTON holders, snapshot block 6439117 |
+| Investors + NT LLC | 632,000,000 | `g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf` (nt1 multisig) |
+| Contributions | 119,993,000 | `g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh` (GovDAO T1 multisig) |
+| GovDAO founders | 7,000 | 1,000 each to 7 addresses |
+| **Total** | **1,333,000,000** | |
 
-The total supply is approximately **1,002,461,998 GNOT**, split across the following buckets:
+Two things are *not* separate buckets and surprise people:
 
-| Bucket | Amount (GNOT) | Description |
-|---|---|---|
-| ATOM airdrop | 350,000,000 | Cosmos Hub ATOM holders (snapshot block 10562840, 2022-05-20) |
-| AtomOne airdrop | 231,000,000 | AtomOne ATONE holders (snapshot block 6439117) |
-| Contributions | 119,000,000 | GovDAO multisig, for community contributions |
-| NT allocation | 300,000,000 | Newtendermint LLC + investors multisig |
-| GovDAO founders | 7,000 | 1,000 GNOT per founder (7 founders) |
+- **nt2 (`g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg`)** is a **sweep, not an allocation**. The AiB
+  addresses listed in `aibCosmosAddrs` / `aibAtoneAddrs` are removed from the airdrop and their combined
+  entitlement is re-added under nt2. That GNOT comes *out of* the 350M + 231M, not on top.
+- **[`mkgenesis/non-airdrop.txt`](mkgenesis/non-airdrop.txt)** adds 2,455,000 GNOT of pre-airdrop premine
+  (test accounts, faucets, early contributors, GitHub requesters) at the very last step. It is dated
+  2022 and is **not** part of the table above. See [`docs/pipeline.md`](docs/pipeline.md#the-non-airdrop-premine).
 
-## Voting weight rules (Cosmos Hub prop 69)
+## How your balance was computed
 
-Each ATOM-holding address is assigned a weight based on its liquid ATOM (`uatom`) balance and its delegated ATOM (`duatom`) balance at the snapshot, modified by its vote on Cosmos Hub [Proposal 69](https://www.mintscan.io/cosmos/proposals/69):
+### Cosmos Hub (ATOM)
 
-| Vote | Weight formula |
+Each address gets a **weight** from its liquid ATOM (`uatom`) and delegated ATOM (`duatom`) at the
+snapshot, modified by how it voted on Cosmos Hub
+[Proposal 69](https://www.mintscan.io/cosmos/proposals/69):
+
+| Vote on prop 69 | Weight |
 |---|---|
-| YES | `uatom` only (staked ATOM excluded) |
+| YES | `uatom` only — **staked ATOM is excluded entirely** |
 | NO | `uatom + duatom × 1.5` |
 | NO WITH VETO | `uatom + duatom × 2` |
-| ABSTAIN / did not vote | `uatom + duatom` |
+| ABSTAIN, or did not vote | `uatom + duatom` |
 
-Each address's GNOT is then allocated proportionally to its weight relative to the total weight of all qualifying addresses.
+Then `ugnot = weight / total_weight × 350,000,000 × 1,000,000`, truncated (not rounded) to a whole ugnot.
 
-## Data sources
+### AtomOne (ATONE / PHOTON)
 
-### Cosmos Hub snapshot (`consolidate/`)
+No governance weighting. `weight = uatone + duatone + uphoton / 7` (integer division), then the same
+proportional split against 231,000,000.
 
-- **`snapshot_consolidated_10562840.json.gz`** — consolidated snapshot at block 10562840 (2022-05-20 08:00 PDT). Contains each address's liquid and delegated ATOM balances plus its last vote on prop 69.
-- **`last_vote_pro69.json.gz`** — all votes submitted while prop 69 was active, sourced from a Cosmos Hub archive node (quicksync.io cosmos-hub-4).
-- **`validators.json`** — validator token-to-share ratios at snapshot height, used to convert delegation shares back to ATOM (accounting for slashing).
+### Exclusions
 
-The consolidated snapshot was produced using [gnobounty7](https://github.com/piux2/gnobounty7). See [`consolidate/README.md`](consolidate/README.md) for the exact commands.
+- [`policy/excluded.txt`](policy/excluded.txt) — addresses removed from the airdrop entirely.
+- [`policy/ibc-escrow-addresses.txt`](policy/ibc-escrow-addresses.txt) — the 426 derived IBC transfer
+  escrow accounts.
+- [`policy/special-accounts.csv`](policy/special-accounts.csv) — annotation of CEX / custodial /
+  validator / module addresses.
 
-### AtomOne snapshot (`consolidate/`)
-
-- **`snapshot_consolidated_atone_6439117.json.gz`** — consolidated snapshot of AtomOne at block 6439117. Produced using [`govbox`](https://github.com/atomone-hub/govbox). See [`consolidate/README.md`](consolidate/README.md) for the exact commands.
-
-### Excluded addresses (`consolidate/excluded.txt`, `consolidate/ibc_escrow_address.txt`)
-
-- CEX, custodial, mining pool, and other non-individual addresses listed in [`special-accounts.csv`](special-accounts.csv), are included, unless specifically stated in excluded.txt.
-
-### Final balances (`mkgenesis/`)
-
-- **`balances.txt.gz`** — the final genesis balance file, containing 3,262,505 lines totalling 1,002,461,998,378,908 ugnot. This is the direct input to the genesis block.
-
-## How to verify
-
-### Prerequisites
-
-- Go 1.21+
-- `jq`
-
-### 1. Re-run the balance computation
-
-```bash
-cd consolidate
-go run .
-# Produces genbalance.txt.gz
-```
-
-Compare the output against the committed `genbalance.txt.gz` and the `mkgenesis/balances.txt.gz`.
-
-### 2. Run the tests
-
-```bash
-cd consolidate
-go test ./...
-```
-
-### 3. Re-create the Cosmos Hub consolidated snapshot from scratch
-
-Follow the instructions in [`snapshot/cosmoshub_snapshot.md`](snapshot/cosmoshub_snapshot.md) to sync a full Cosmos Hub node and export state at block 10562840. Then follow [`consolidate/README.md`](consolidate/README.md) to rebuild `snapshot_consolidated_10562840.json.gz` using [gnobounty7](https://github.com/piux2/gnobounty7).
-
-### 4. Re-create the AtomOne consolidated snapshot from scratch
-
-Follow the instructions in [`consolidate/README.md`](consolidate/README.md) under the `snapshot_consolidated_atone.json` section, using the [`govbox`](https://github.com/atomone-hub/govbox) tool against an AtomOne genesis export at block [6439117](https://atomscan.com/atomone/blocks/6439117).
+Read [`policy/README.md`](policy/README.md) before assuming any of these is enforced — one of them is
+**annotation only**, and the exact enforcement status of each is documented there.
 
 ## Repository layout
 
+The tree reads in pipeline order.
+
 ```
-consolidate/        Scripts and data for computing per-address GNOT weights
-mkgenesis/          Final genesis balance file
-prop69/             Raw prop 69 vote data (votes.csv, votes-unique.csv)
-snapshot/           Instructions for taking a Cosmos Hub full-node snapshot
-special-accounts.csv  Non-individual addresses potentially excluded from the airdrop (CEX, custodial, etc.)
+inputs/      immutable chain snapshots + how they were captured   (never edited after capture)
+policy/      human decisions: exclusions, annotations, escrow list
+allocate/    the allocation engine (Go) -> genbalance.txt.gz
+mkgenesis/   final merge with the premine -> balances.txt.gz      (the genesis file)
+verify/      independent cross-checks of the outputs
+archive/     historical material, kept for provenance; not part of the pipeline
+docs/        allocation rules, pipeline detail, reproduction, history
 ```
 
-## Contributions
+Each directory has its own `README.md` explaining what is in it and whether it is live or historical.
 
-* https://github.com/gnolang/independence-day/pull/3, https://github.com/gnolang/independence-day/pull/6, https://github.com/gnolang/independence-day/pull/7, https://github.com/gnolang/independence-day/pull/11 - @piux2, big part of the initial version of the airdrop generator.
-* https://github.com/gnolang/independence-day/pull/17 - @KorNatten, update special address list.
-* 0xAN|Nodes.Guru `g1jj32fhrz6awxupdw5na244nxutjk99xk847wm2` for the 5/20 export.
+## Reproducing the result
+
+Full detail — including rebuilding the snapshots from a gaiad export — is in
+[`docs/reproduce.md`](docs/reproduce.md). The short version:
+
+```sh
+make            # allocate -> genbalance.txt.gz -> mkgenesis -> balances.txt.gz
+make verify     # unit tests + independent cross-check + supply total
+```
+
+Requirements: Go 1.21+, GNU `awk` (`gawk`), GNU `gzip`/`zcat`, `jq`. On macOS: `brew install gawk`.
+
+**The pipeline is bit-reproducible.** Running `make` on a clean checkout regenerates
+`allocate/genbalance.txt.gz` byte-for-byte, and `mkgenesis/balances.txt` byte-for-byte. Verified on
+linux/amd64 and darwin/arm64. If your run differs, that is a bug and we want to hear about it.
+
+## Verifying your own line
+
+See [`docs/verify-your-balance.md`](docs/verify-your-balance.md). It walks through, for one address:
+finding your row in the snapshot, reading your prop-69 vote, computing your weight by hand, and
+confirming it against the shipped `balances.txt.gz`.
+
+## Stable paths — do not move these
+
+External tooling fetches raw URLs into this repository. **These two paths are a public contract:**
+
+| Path | Fetched by |
+|---|---|
+| `mkgenesis/balances.txt.gz` | `gnolang/gno` → `misc/deployments/gnoland1/gen-genesis.sh`, `misc/deployments/test13.gno.land/gen-genesis.sh` (pinned by commit sha), and `misc/deployments/test{2,3}.gno.land/Makefile` (unpinned, `raw/main/...`) |
+| `mkgenesis/non-airdrop.txt` | same pipeline, indirectly |
+
+`mkgenesis/` therefore keeps its historical name even though the rest of the tree was renamed for
+clarity. Anything that moves `mkgenesis/balances.txt.gz` breaks every unpinned consumer silently — the
+download just 404s. If it ever has to move, land the redirect first.
+
+`mkgenesis/README.md` is **generated** by `mkgenesis/Makefile`. Do not hand-edit it.
+
+## Credits
+
+See [`CONTRIBUTIONS.md`](CONTRIBUTIONS.md).

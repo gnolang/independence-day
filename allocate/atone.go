@@ -14,7 +14,7 @@ import (
 const PHOTON_TO_ATONE_RATIO = 7 // 1 atone = 7 photons
 
 func processAtone() (map[string]Distribution, int) {
-	as := parseAtoneAccounts("snapshot_consolidated_atone_6439117.json.gz")
+	as := parseAtoneAccounts(atoneSnapshotFile)
 
 	return qualifyAtone(as)
 }
