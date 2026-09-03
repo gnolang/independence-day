@@ -2,7 +2,7 @@
 
 ## lines
 ```
-3262505 balances.txt
+3262504 balances.txt
 ```
 
 ## sum
@@ -18,7 +18,7 @@
 ## top 100 accounts
 ```
 g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf=632000000000000ugnot
-g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf=117538000000000ugnot
+g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf=117648000000000ugnot
 g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg=52453657798846ugnot
 g1p3ucd3ptpw902fluyjzhq3ffgq4ntddatev7s5=27940198365214ugnot
 g14lultfckehtszvzw4ehu0apvsr77afvyy5u50n=18268683530357ugnot

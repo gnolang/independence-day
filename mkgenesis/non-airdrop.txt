@@ -1,24 +1,31 @@
-# Proposed distribution:
-#  * ATOM_AIRDROP =           750000000000000ugnot 75%
-#  * NEW_TENDERMINT_OR_JAE =  100000000000000ugnot 10%
-#  * CORE_MISSION_DAO =       100000000000000ugnot 10%
-#  * EARLY_CONTRIBUTORS =      50000000000000ugnot  5%
+# Non-airdrop premine.
 #
-# NOTES:
-#  - Prop69 YES voters & ICF slashed from ATOM_AIRDROP
-#  - Prop69 NO & NWV rewarded (see PEACE.md) from ATOM_AIRDROP
-#  - NEW_TENDERMINT_JAE reduced by amount of AIB premine going to NewTendermint, to make total equal 10% (Jae's allocation will be transparent)
+# The only hand-written balances in the genesis. mkgenesis/Makefile appends these
+# rows to the airdrop AFTER allocate/process_consolidated.go has computed the
+# buckets, and sums any address that appears in both.
 #
-# EARLY_CONTRIBUTORS: 50M GNOT, of which:
-#  - 10K test1 (temporary)
-#  - 100K test2 (temporary)
-#  - 2M  faucet0 and faucet1 (temporary)
-#  - 300K contributor (TODO, add more)
-#  - 45K request requested from github
-
-# Test accounts.
-g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5=10000000000ugnot # test1
-g1us8428u2a5satrlxzagqqa5m6vmuze025anjlj=100000000000ugnot # test2
+# The total here must equal TOTAL_PREMINE_NON_AIRDROP in
+# allocate/process_consolidated.go — TestPremineMatchesFile enforces it. The same
+# amount is deducted from the Contributions bucket via
+# PREMINE_ABSORBED_FROM_CONTRIBS, so adding or removing a row here moves GNOT
+# between this file and GovDAO T1 rather than changing total supply.
+#
+# Current contents: 2,345,000 GNOT
+#   2,000,000  faucet0 + faucet1
+#     300,000  3 named contributors
+#      45,000  45 GitHub requesters
+#
+# The finalized allocation is the seven-bucket 1,333,000,000 GNOT breakdown in the
+# root README. The buckets themselves are defined in
+# allocate/process_consolidated.go and nowhere else — do not restate them here.
+#
+# REMOVED 2026-09-03: test1 (10,000 GNOT) and test2 (100,000 GNOT). Both were
+# funded from mnemonics published in gnolang/gno's own test fixtures, so anyone
+# could spend them. Marked "(temporary)" in 2022 and never cleaned up.
+#
+# STILL OPEN: faucet0 and faucet1 (1,000,000 GNOT each) were also marked
+# "(temporary)" in 2022. Whether the mainnet faucet is funded from here or from a
+# purpose-built multisig is a separate decision and has not been made.
 
 # Faucet accounts.
 g1f4v282mwyhu29afke4vq5r2xzcm6z3ftnugcnv=1000000000000ugnot # faucet0 (jae)
@@ -28,7 +35,9 @@ g127jydsh6cms3lrtdenydxsckh23a8d6emqcvfa=1000000000000ugnot # faucet1 (moul)
 g15gdm49ktawvkrl88jadqpucng37yxutucuwaef=100000000000ugnot # @chadwick
 g1u7y667z64x2h7vc6fmpcprgey4ck233jaww9zq=100000000000ugnot # @moul
 g14da4n9hcynyzz83q607uu8keuh9hwlv42ra6fa=100000000000ugnot # @piux2
-# "g1us8428u2a5satrlxzagqqa5m6vmuze025anjlj=100000000000ugnot # @difranco
+# NOTE: a commented-out row here once assigned @difranco the SAME address as
+# test2 (g1us8428u2a5satrlxzagqqa5m6vmuze025anjlj) — a published mnemonic reused
+# as a placeholder. Never active. Recorded so the reuse is not repeated.
 
 # Requests from Github.
 g1589c8cekvmjfmy0qrd4f3z52r7fn7rgk02667s=1000000000ugnot # @mefodica #83
