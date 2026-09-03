@@ -34,7 +34,7 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 | ATOM airdrop | 350,000,000 | Cosmos Hub ATOM holders, snapshot block 10562840 (2022-05-20 08:00 PDT) |
 | AtomOne airdrop | 231,000,000 | AtomOne ATONE/PHOTON holders, snapshot block 6439117 |
 | Investors + NT LLC | 632,000,000 | `g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf` (nt1 multisig) |
-| Contributions | 117,538,000 | `g1rp7cmetn27eqlpjpc4vuusf8kaj746tysc0qgh` (GovDAO T1 multisig) |
+| Contributions | 117,538,000 | `g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf` (GovDAO T1 multisig) |
 | GovDAO founders | 7,000 | 1,000 each to 7 addresses |
 | Non-airdrop premine | 2,455,000 | `mkgenesis/non-airdrop.txt` — charged to the Contributions bucket |
 | **Total** | **1,333,000,000** | |
