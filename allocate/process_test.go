@@ -174,6 +174,38 @@ func TestHardcodedAddressesAreValid(t *testing.T) {
 		"founders budget must divide evenly, otherwise the remainder is silently dropped")
 }
 
+// TestExcludedTypesDefaultsToNoOp is the property that makes this mechanism safe
+// to merge ahead of the policy decision it exists for.
+func TestExcludedTypesDefaultsToNoOp(t *testing.T) {
+	assert.Empty(t, loadExcludedTypes(),
+		"policy/excluded-types.txt must ship with every pattern commented out")
+	assert.Empty(t, specialExcluded,
+		"no address may be excluded by class until a pattern is uncommented")
+}
+
+func TestTypePatternMatching(t *testing.T) {
+	exact := typePattern{raw: "CEX", prefix: "cex"}
+	assert.True(t, exact.matches("CEX"))
+	assert.True(t, exact.matches("  cex  "), "trimmed and case-insensitive")
+	assert.False(t, exact.matches("CEX or DEX"), "exact must not match a longer type")
+
+	glob := typePattern{raw: "Upbit*", prefix: "upbit", glob: true}
+	assert.True(t, glob.matches("Upbit #01 (Deposit)"))
+	assert.True(t, glob.matches("Upbit #20 (Staking)"))
+	assert.False(t, glob.matches("Bithumb #04"))
+
+	blank := typePattern{raw: "?", prefix: "?"}
+	assert.True(t, blank.matches("?"))
+	assert.False(t, blank.matches(""))
+}
+
+// TestSpecialAccountsCSVIsParseable guards the loader against the file it reads:
+// special-accounts.csv is hand-maintained, has ragged rows and at least one bare
+// double quote, and a parse failure here would be a panic at init.
+func TestSpecialAccountsCSVIsParseable(t *testing.T) {
+	assert.NotPanics(t, loadSpecialAccountExclusions)
+}
+
 func TestConvertAddress(t *testing.T) {
 	test2, err := convertAddress(test2_address_cosmos, "cosmos")
 	assert.NoError(t, err)
