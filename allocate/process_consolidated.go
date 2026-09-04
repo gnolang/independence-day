@@ -99,6 +99,7 @@ var ibcEscrowAddress = map[string]bool{}
 var excludedAddresses = map[string]bool{}
 
 func init() {
+	validateHardcodedAddresses()
 	loadEscrowAddress()
 	loadExcludedAddresses()
 }
@@ -150,32 +151,14 @@ func main() {
 	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
 
 	// Allocate contributions budget to GovDAO multisig
-	totalDist[MULTISIG_GOVDAO_ADDRESS] = Distribution{
-		Account: Account{
-			Address: MULTISIG_GOVDAO_ADDRESS,
-		},
-		GnoAddress: MULTISIG_GOVDAO_ADDRESS,
-		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_CONTRIBS) * 1000000),
-	}
+	assign(totalDist, MULTISIG_GOVDAO_ADDRESS, TOTAL_AIRDROP_CONTRIBS)
 
 	// Allocate NT budget to NT main multisig
-	totalDist[MULTISIG_NT1_ADDRESS] = Distribution{
-		Account: Account{
-			Address: MULTISIG_NT1_ADDRESS,
-		},
-		GnoAddress: MULTISIG_NT1_ADDRESS,
-		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC) * 1000000),
-	}
+	assign(totalDist, MULTISIG_NT1_ADDRESS, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
 
 	// Allocate GovDAO founders budget (1000 GNOT each)
 	for _, addr := range govdaoFounders {
-		totalDist[addr] = Distribution{
-			Account: Account{
-				Address: addr,
-			},
-			GnoAddress: addr,
-			Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_GOVDAO_FOUNDERS/len(govdaoFounders)) * 1000000),
-		}
+		assign(totalDist, addr, TOTAL_AIRDROP_GOVDAO_FOUNDERS/len(govdaoFounders))
 	}
 
 	// Create gzipped file
@@ -236,6 +219,72 @@ var aibAtoneAddrs = []string{
 	"atone17g3gk5ymjt35wre4p57hfvmex36jcedtr3twt8", // derived from cosmos17g3gk5ymjt35wre4p57hfvmex36jcedtd3hfal
 	"atone17v7h4wdvjzkg09qmzyvf5w70tpnjgvekad43ry", // derived from cosmos17v7h4wdvjzkg09qmzyvf5w70tpnjgvekndfk4u
 	"atone1cxt79zavgr9qvqfx9hjsr9aqvpx7ftanfh98wz",
+}
+
+// assign writes a fixed allocation of `gnot` GNOT to `addr`.
+//
+// It PANICS if addr already carries an entitlement. The three call sites used to
+// be plain map assignments, which silently discarded whatever was there. None of
+// the ten hardcoded addresses currently appears in either snapshot, so nothing is
+// being lost today — but that is a property of the input data, not of the code,
+// and it would stop being true the moment a treasury or founder address turned
+// out to hold ATOM or ATONE. A snapshot-derived entitlement would vanish with no
+// diagnostic and no change in total supply, because the fixed amount replaces it.
+//
+// If this ever fires, the fix is a decision (does the address keep its airdrop on
+// top of its allocation, or not?), not a code change — so it must not be silent.
+func assign(dist map[string]Distribution, addr string, gnot int) {
+	if existing, ok := dist[addr]; ok && !existing.Ugnot.IsZero() {
+		panic(fmt.Errorf(
+			"refusing to overwrite an existing entitlement: %s already holds %s ugnot "+
+				"(from source address %s) and would be replaced by a fixed allocation of %d GNOT; "+
+				"decide explicitly whether the two should be summed",
+			addr, whole(existing.Ugnot.String()), existing.Account.Address, gnot))
+	}
+
+	dist[addr] = Distribution{
+		Account:    Account{Address: addr},
+		GnoAddress: addr,
+		Ugnot:      types.NewDec(int64(gnot) * 1000000),
+	}
+}
+
+// validateHardcodedAddresses checks every address this program writes into the
+// balance sheet without deriving it from a snapshot. A malformed one would
+// otherwise be discovered by whatever consumes the output — or, worse, not be
+// discovered, since nothing downstream asserts the address format.
+func validateHardcodedAddresses() {
+	seen := make(map[string]string, len(govdaoFounders)+3)
+
+	check := func(addr, role string) {
+		if _, err := addrKey(addr); err != nil {
+			panic(fmt.Errorf("%s: invalid address %q: %w", role, addr, err))
+		}
+		if prev, dup := seen[addr]; dup {
+			panic(fmt.Errorf("address %s is used for both %s and %s", addr, prev, role))
+		}
+		seen[addr] = role
+	}
+
+	check(MULTISIG_GOVDAO_ADDRESS, "MULTISIG_GOVDAO_ADDRESS")
+	check(MULTISIG_NT1_ADDRESS, "MULTISIG_NT1_ADDRESS")
+	check(MULTISIG_NT2_ADDRESS, "MULTISIG_NT2_ADDRESS")
+	for i, addr := range govdaoFounders {
+		check(addr, fmt.Sprintf("govdaoFounders[%d]", i))
+	}
+}
+
+// addrKey returns the canonical g1… form of a 20-byte bech32 address, whatever
+// its human-readable part.
+func addrKey(address string) (string, error) {
+	_, bz, err := bech32.Decode(address)
+	if err != nil {
+		return "", err
+	}
+	if len(bz) != 20 {
+		return "", fmt.Errorf("address %s has %d bytes, expected 20 bytes", address, len(bz))
+	}
+	return bech32.Encode("g", bz)
 }
 
 func processNTMultisig(dist map[string]Distribution, prefix string, addrs []string) {

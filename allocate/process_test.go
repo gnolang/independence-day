@@ -128,6 +128,52 @@ func TestGenesisFileTotal(t *testing.T) {
 	t.Logf("%s: %d rows, %d ugnot (%.6f GNOT)", balancesFile, rows, sum, float64(sum)/1e6)
 }
 
+// TestAssignRefusesToOverwrite locks in the guard at the three fixed-allocation
+// call sites. Before it existed these were plain map writes, so a treasury or
+// founder address that also held ATOM/ATONE would have had its snapshot
+// entitlement silently replaced.
+func TestAssignRefusesToOverwrite(t *testing.T) {
+	dist := map[string]Distribution{}
+
+	// An address with no prior entitlement is fine.
+	assert.NotPanics(t, func() { assign(dist, test2_address_gno, 1000) })
+	assert.Equal(t, "1000000000", whole(dist[test2_address_gno].Ugnot.String()))
+
+	// A zero-valued placeholder is also fine — qualify() inserts those for
+	// every snapshot address, including ones that qualify for nothing.
+	dist2 := map[string]Distribution{
+		ledger_address_gno: {Ugnot: types.ZeroDec()},
+	}
+	assert.NotPanics(t, func() { assign(dist2, ledger_address_gno, 1000) })
+
+	// A real entitlement must not be silently discarded.
+	dist3 := map[string]Distribution{
+		ledger_address_gno: {
+			Account: Account{Address: ledger_address_cosmos},
+			Ugnot:   types.NewDec(42),
+		},
+	}
+	assert.Panics(t, func() { assign(dist3, ledger_address_gno, 1000) })
+}
+
+// TestHardcodedAddressesAreValid covers every address written into the sheet
+// without being derived from a snapshot.
+func TestHardcodedAddressesAreValid(t *testing.T) {
+	assert.NotPanics(t, validateHardcodedAddresses)
+
+	for _, addr := range append([]string{
+		MULTISIG_GOVDAO_ADDRESS, MULTISIG_NT1_ADDRESS, MULTISIG_NT2_ADDRESS,
+	}, govdaoFounders...) {
+		key, err := addrKey(addr)
+		require.NoError(t, err, "address %s", addr)
+		assert.Equal(t, addr, key, "address %s is not in canonical g1 form", addr)
+	}
+
+	assert.Len(t, govdaoFounders, 7, "TOTAL_AIRDROP_GOVDAO_FOUNDERS is divided by len(govdaoFounders)")
+	assert.Zero(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS%len(govdaoFounders),
+		"founders budget must divide evenly, otherwise the remainder is silently dropped")
+}
+
 func TestConvertAddress(t *testing.T) {
 	test2, err := convertAddress(test2_address_cosmos, "cosmos")
 	assert.NoError(t, err)
