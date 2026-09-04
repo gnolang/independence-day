@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -41,10 +42,12 @@ type Distribution struct {
 //	inputs/  — immutable chain snapshots, never edited after capture
 //	policy/  — human-editable decisions (exclusions, annotations)
 const (
-	cosmosSnapshotFile = "../inputs/cosmoshub-10562840.json.gz"
-	atoneSnapshotFile  = "../inputs/atomone-6439117.json.gz"
-	excludedFile       = "../policy/excluded.txt"
-	ibcEscrowFile      = "../policy/ibc-escrow-addresses.txt"
+	cosmosSnapshotFile  = "../inputs/cosmoshub-10562840.json.gz"
+	atoneSnapshotFile   = "../inputs/atomone-6439117.json.gz"
+	excludedFile        = "../policy/excluded.txt"
+	excludedTypesFile   = "../policy/excluded-types.txt"
+	specialAccountsFile = "../policy/special-accounts.csv"
+	ibcEscrowFile       = "../policy/ibc-escrow-addresses.txt"
 
 	// outputFile is consumed by mkgenesis/Makefile.
 	outputFile = "genbalance.txt.gz"
@@ -83,24 +86,81 @@ const TOTAL_PREMINE_NON_AIRDROP = 2345000
 const PREMINE_ABSORBED_FROM_CONTRIBS = TOTAL_PREMINE_NON_AIRDROP // option B
 
 const (
-	TOTAL_AIRDROP_ATOM            = 350000000
-	TOTAL_AIRDROP_ATONE           = 231000000
-	TOTAL_AIRDROP_CONTRIBS        = 119993000 - PREMINE_ABSORBED_FROM_CONTRIBS
-	TOTAL_AIRDROP_NT              = 300000000
-	TOTAL_AIRDROP_NT_LLC          = 332000000
+	TOTAL_AIRDROP_ATOM  = 350000000
+	TOTAL_AIRDROP_ATONE = 231000000
+	// §123-124 Investors 300M + NT,LLC 332M; §136-138 carves 150M of Investors
+	// as unlocked at mainnet, which needs an address of its own because one
+	// account carries one vesting schedule.
+	TOTAL_INVESTORS_UNLOCKED = 150000000
+	TOTAL_INVESTORS_VESTING  = 150000000
+	TOTAL_AIRDROP_NT         = TOTAL_INVESTORS_UNLOCKED + TOTAL_INVESTORS_VESTING
+	TOTAL_AIRDROP_NT_LLC     = 332000000
+
+	// The three treasuries of Constitution §120-122, each with its own address.
+	// They used to be one undifferentiated TOTAL_AIRDROP_CONTRIBS line.
+	//
+	//   §120  Core Treasury                 40,000,000
+	//   §121  Ecosystem Treasury            60,000,000
+	//   §122  Validator Services Treasury   20,000,000
+	//                                      ------------
+	//                                      120,000,000
+	//
+	// The premine and the founders allocation are paid OUT of these, so the
+	// amounts actually written to the three addresses are net of them. Which
+	// treasury absorbs which is a policy choice — see the two constants below.
+	TOTAL_TREASURY_CORE      = 40000000
+	TOTAL_TREASURY_ECOSYSTEM = 60000000
+	TOTAL_TREASURY_VALIDATOR = 20000000
+
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
 
-	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
-	MULTISIG_NT2_ADDRESS    = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
-	MULTISIG_GOVDAO_ADDRESS = "g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf" // govdao t1
+	// §333: "Present GovDAO members are not eligible for any allocation from the
+	// Ecosystem Treasury genesis allocation." All seven founders are GovDAO
+	// founders, so the founders allocation is charged to CORE. While the three
+	// treasuries shared one line this could not be shown either way; now it can.
+	FOUNDERS_CHARGED_TO_CORE = TOTAL_AIRDROP_GOVDAO_FOUNDERS
+
+	// §121 makes the Ecosystem Treasury "for prior and future Gno.land ecosystem
+	// development" and §140 makes GovDAO responsible for distributing it "to
+	// prior and future Gno.land ecosystem contributors" — so the 2022 contributor
+	// premine is charged to ECOSYSTEM.
+	//
+	// NOTE this includes 2,000,000 GNOT of faucet funding, which is chain
+	// operations rather than ecosystem development and arguably does not belong
+	// in this treasury at all under §226. Left here because moving it needs a
+	// decision about where the faucet IS funded from.
+	PREMINE_CHARGED_TO_ECOSYSTEM = TOTAL_PREMINE_NON_AIRDROP
+
+	// Net amounts written to the three treasury addresses.
+	TOTAL_TREASURY_CORE_NET      = TOTAL_TREASURY_CORE - FOUNDERS_CHARGED_TO_CORE
+	TOTAL_TREASURY_ECOSYSTEM_NET = TOTAL_TREASURY_ECOSYSTEM - PREMINE_CHARGED_TO_ECOSYSTEM
+	TOTAL_TREASURY_VALIDATOR_NET = TOTAL_TREASURY_VALIDATOR
+
+	MULTISIG_NT2_ADDRESS = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
+
+	INVESTORS_UNLOCKED_ADDRESS = "TODO_INVESTORS_UNLOCKED_ADDR" // no vesting schedule, §136
+	INVESTORS_VESTING_ADDRESS  = "TODO_INVESTORS_VESTING_ADDR"
+	NT_LLC_ADDRESS             = "TODO_NT_LLC_ADDR"
+
+	// PLACEHOLDERS — these addresses do not exist yet. validateHardcodedAddresses()
+	// refuses to run until they are replaced, so this cannot ship by accident.
+	TREASURY_CORE_ADDRESS      = "TODO_CORE_TREASURY_ADDR"
+	TREASURY_ECOSYSTEM_ADDRESS = "TODO_ECOSYSTEM_TREASURY_ADDR"
+	TREASURY_VALIDATOR_ADDRESS = "TODO_VALIDATOR_TREASURY_ADDR"
 )
 
 var ibcEscrowAddress = map[string]bool{}
 var excludedAddresses = map[string]bool{}
 
+// specialExcluded holds addresses removed by CLASS via policy/excluded-types.txt,
+// keyed by the canonical g1 form. Empty unless a pattern is uncommented there.
+var specialExcluded = map[string]bool{}
+
 func init() {
+	validateHardcodedAddresses()
 	loadEscrowAddress()
 	loadExcludedAddresses()
+	loadSpecialAccountExclusions()
 }
 
 func main() {
@@ -149,33 +209,20 @@ func main() {
 
 	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
 
-	// Allocate contributions budget to GovDAO multisig
-	totalDist[MULTISIG_GOVDAO_ADDRESS] = Distribution{
-		Account: Account{
-			Address: MULTISIG_GOVDAO_ADDRESS,
-		},
-		GnoAddress: MULTISIG_GOVDAO_ADDRESS,
-		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_CONTRIBS) * 1000000),
-	}
+	// Allocate each treasury to its own address (Constitution §120-122).
+	assign(totalDist, TREASURY_CORE_ADDRESS, TOTAL_TREASURY_CORE_NET)
+	assign(totalDist, TREASURY_ECOSYSTEM_ADDRESS, TOTAL_TREASURY_ECOSYSTEM_NET)
+	assign(totalDist, TREASURY_VALIDATOR_ADDRESS, TOTAL_TREASURY_VALIDATOR_NET)
 
-	// Allocate NT budget to NT main multisig
-	totalDist[MULTISIG_NT1_ADDRESS] = Distribution{
-		Account: Account{
-			Address: MULTISIG_NT1_ADDRESS,
-		},
-		GnoAddress: MULTISIG_NT1_ADDRESS,
-		Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC) * 1000000),
-	}
+	// Allocate Investors and NT,LLC separately (§123-124), with the §136
+	// mainnet-unlocked tranche split from the vesting remainder.
+	assign(totalDist, INVESTORS_UNLOCKED_ADDRESS, TOTAL_INVESTORS_UNLOCKED)
+	assign(totalDist, INVESTORS_VESTING_ADDRESS, TOTAL_INVESTORS_VESTING)
+	assign(totalDist, NT_LLC_ADDRESS, TOTAL_AIRDROP_NT_LLC)
 
 	// Allocate GovDAO founders budget (1000 GNOT each)
 	for _, addr := range govdaoFounders {
-		totalDist[addr] = Distribution{
-			Account: Account{
-				Address: addr,
-			},
-			GnoAddress: addr,
-			Ugnot:      types.NewDec(int64(TOTAL_AIRDROP_GOVDAO_FOUNDERS/len(govdaoFounders)) * 1000000),
-		}
+		assign(totalDist, addr, TOTAL_AIRDROP_GOVDAO_FOUNDERS/len(govdaoFounders))
 	}
 
 	// Create gzipped file
@@ -236,6 +283,76 @@ var aibAtoneAddrs = []string{
 	"atone17g3gk5ymjt35wre4p57hfvmex36jcedtr3twt8", // derived from cosmos17g3gk5ymjt35wre4p57hfvmex36jcedtd3hfal
 	"atone17v7h4wdvjzkg09qmzyvf5w70tpnjgvekad43ry", // derived from cosmos17v7h4wdvjzkg09qmzyvf5w70tpnjgvekndfk4u
 	"atone1cxt79zavgr9qvqfx9hjsr9aqvpx7ftanfh98wz",
+}
+
+// assign writes a fixed allocation of `gnot` GNOT to `addr`.
+//
+// It PANICS if addr already carries an entitlement. The three call sites used to
+// be plain map assignments, which silently discarded whatever was there. None of
+// the ten hardcoded addresses currently appears in either snapshot, so nothing is
+// being lost today — but that is a property of the input data, not of the code,
+// and it would stop being true the moment a treasury or founder address turned
+// out to hold ATOM or ATONE. A snapshot-derived entitlement would vanish with no
+// diagnostic and no change in total supply, because the fixed amount replaces it.
+//
+// If this ever fires, the fix is a decision (does the address keep its airdrop on
+// top of its allocation, or not?), not a code change — so it must not be silent.
+func assign(dist map[string]Distribution, addr string, gnot int) {
+	if existing, ok := dist[addr]; ok && !existing.Ugnot.IsZero() {
+		panic(fmt.Errorf(
+			"refusing to overwrite an existing entitlement: %s already holds %s ugnot "+
+				"(from source address %s) and would be replaced by a fixed allocation of %d GNOT; "+
+				"decide explicitly whether the two should be summed",
+			addr, whole(existing.Ugnot.String()), existing.Account.Address, gnot))
+	}
+
+	dist[addr] = Distribution{
+		Account:    Account{Address: addr},
+		GnoAddress: addr,
+		Ugnot:      types.NewDec(int64(gnot) * 1000000),
+	}
+}
+
+// validateHardcodedAddresses checks every address this program writes into the
+// balance sheet without deriving it from a snapshot. A malformed one would
+// otherwise be discovered by whatever consumes the output — or, worse, not be
+// discovered, since nothing downstream asserts the address format.
+func validateHardcodedAddresses() {
+	seen := make(map[string]string, len(govdaoFounders)+3)
+
+	check := func(addr, role string) {
+		if _, err := addrKey(addr); err != nil {
+			panic(fmt.Errorf("%s: invalid address %q: %w", role, addr, err))
+		}
+		if prev, dup := seen[addr]; dup {
+			panic(fmt.Errorf("address %s is used for both %s and %s", addr, prev, role))
+		}
+		seen[addr] = role
+	}
+
+	check(TREASURY_CORE_ADDRESS, "TREASURY_CORE_ADDRESS")
+	check(TREASURY_ECOSYSTEM_ADDRESS, "TREASURY_ECOSYSTEM_ADDRESS")
+	check(TREASURY_VALIDATOR_ADDRESS, "TREASURY_VALIDATOR_ADDRESS")
+	check(INVESTORS_UNLOCKED_ADDRESS, "INVESTORS_UNLOCKED_ADDRESS")
+	check(INVESTORS_VESTING_ADDRESS, "INVESTORS_VESTING_ADDRESS")
+	check(NT_LLC_ADDRESS, "NT_LLC_ADDRESS")
+	check(MULTISIG_NT2_ADDRESS, "MULTISIG_NT2_ADDRESS")
+	for i, addr := range govdaoFounders {
+		check(addr, fmt.Sprintf("govdaoFounders[%d]", i))
+	}
+}
+
+// addrKey returns the canonical g1… form of a 20-byte bech32 address, whatever
+// its human-readable part.
+func addrKey(address string) (string, error) {
+	_, bz, err := bech32.Decode(address)
+	if err != nil {
+		return "", err
+	}
+	if len(bz) != 20 {
+		return "", fmt.Errorf("address %s has %d bytes, expected 20 bytes", address, len(bz))
+	}
+	return bech32.Encode("g", bz)
 }
 
 func processNTMultisig(dist map[string]Distribution, prefix string, addrs []string) {
@@ -447,14 +564,25 @@ func convertAddress(cosmosAddress string, prefix string) (string, error) {
 }
 
 func skip(address string) bool {
-	// skip excluded addresses
-	if excludedAddresses[address] {
+	// Skip excluded addresses. Matched on the 20-byte payload, not the bech32
+	// string: excluded.txt is written in cosmos1… form and qualifyAtone() passes
+	// the atone1… encoding of the same keys.
+	if key, err := addrKey(address); err == nil && excludedAddresses[key] {
 		return true
 	}
 
-	// skip ibc escrow address
-	if ibcEscrowAddress[address] {
-		// return true
+	// skip addresses excluded by class via policy/excluded-types.txt
+	if len(specialExcluded) > 0 {
+		if key, err := addrKey(address); err == nil && specialExcluded[key] {
+			return true
+		}
+	}
+
+	// Skip IBC transfer escrow accounts. Derived as
+	// sha256("ics20-1" || 0x00 || "transfer/channel-N")[:20] — no private key
+	// exists for them on any chain, so crediting them is a burn.
+	if key, err := addrKey(address); err == nil && ibcEscrowAddress[key] {
+		return true
 	}
 
 	return false
@@ -472,7 +600,11 @@ func loadEscrowAddress() {
 		// cosmos1xxxxxx:g1xxxxxxxxxxxxxxxx:channel-1
 		addr := strings.Split(line, ":")[0]
 
-		ibcEscrowAddress[addr] = true
+		key, err := addrKey(addr)
+		if err != nil {
+			panic(fmt.Errorf("%s: bad address %q: %w", ibcEscrowFile, addr, err))
+		}
+		ibcEscrowAddress[key] = true
 	}
 }
 
@@ -492,8 +624,11 @@ func loadExcludedAddresses() {
 		// Format: cosmos1xxxxxx # comment
 		parts := strings.Fields(line)
 		if len(parts) > 0 {
-			addr := parts[0]
-			excludedAddresses[addr] = true
+			key, err := addrKey(parts[0])
+			if err != nil {
+				panic(fmt.Errorf("%s: bad address %q: %w", excludedFile, parts[0], err))
+			}
+			excludedAddresses[key] = true
 		}
 	}
 }
@@ -517,4 +652,119 @@ func truncateMiddle(s string, maxLen int) string {
 	backLen := remaining - frontLen
 
 	return string(runes[:frontLen]) + ellipsis + string(runes[len(runes)-backLen:])
+}
+
+// loadSpecialAccountExclusions reads policy/excluded-types.txt and, for every
+// pattern in it, removes the matching rows of policy/special-accounts.csv from
+// the airdrop.
+//
+// special-accounts.csv has always been annotation that no code read. This makes
+// it actionable without turning it into an address list: the decision stays
+// expressed as "no exchanges" rather than as 30 hand-copied addresses that go
+// stale the moment the CSV is updated.
+//
+// Both files are read even when no pattern is active, so a malformed CSV or a
+// pattern that matches nothing is caught on every run rather than on the day
+// somebody first switches an exclusion on.
+func loadSpecialAccountExclusions() {
+	patterns := loadExcludedTypes()
+
+	f, err := os.Open(specialAccountsFile)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	// The file is hand-maintained and has been since 2022: rows have varying
+	// field counts and at least one comment field contains a bare double quote.
+	// Both are tolerated rather than "fixed", so that this loader never becomes a
+	// reason to reformat a human-curated policy file.
+	r.FieldsPerRecord = -1
+	r.LazyQuotes = true
+
+	rows, err := r.ReadAll()
+	if err != nil {
+		panic(fmt.Errorf("%s: %w", specialAccountsFile, err))
+	}
+
+	matched := make([]int, len(patterns))
+	for i, row := range rows {
+		if i == 0 || len(row) == 0 {
+			continue // header
+		}
+		addr := strings.TrimSpace(row[0])
+		if !strings.HasPrefix(addr, "cosmos1") {
+			continue // blank line, or the cosmosxxxx example row
+		}
+		key, err := addrKey(addr)
+		if err != nil {
+			panic(fmt.Errorf("%s line %d: invalid address %q: %w", specialAccountsFile, i+1, addr, err))
+		}
+
+		var typ string
+		if len(row) > 1 {
+			typ = strings.TrimSpace(row[1])
+		}
+		for pi, p := range patterns {
+			if p.matches(typ) {
+				specialExcluded[key] = true
+				matched[pi]++
+			}
+		}
+	}
+
+	for i, p := range patterns {
+		if matched[i] == 0 {
+			panic(fmt.Errorf("%s: pattern %q matched no row in %s — typo?",
+				excludedTypesFile, p.raw, specialAccountsFile))
+		}
+		fmt.Printf("excluded-types: %q matched %d row(s)\n", p.raw, matched[i])
+	}
+}
+
+// typePattern is an exact type match, or a prefix match if it ends in "*".
+type typePattern struct {
+	raw    string
+	prefix string
+	glob   bool
+}
+
+func (p typePattern) matches(typ string) bool {
+	typ = strings.ToLower(strings.TrimSpace(typ))
+	if p.glob {
+		return strings.HasPrefix(typ, p.prefix)
+	}
+	return typ == p.prefix
+}
+
+func loadExcludedTypes() []typePattern {
+	content := osm.MustReadFile(excludedTypesFile)
+
+	var patterns []typePattern
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Allow a trailing "# comment" on an active line.
+		if i := strings.Index(line, "#"); i >= 0 {
+			line = strings.TrimSpace(line[:i])
+		}
+		if line == "" {
+			continue
+		}
+		p := typePattern{raw: line}
+		if strings.HasSuffix(line, "*") {
+			p.glob = true
+			p.prefix = strings.ToLower(strings.TrimSuffix(line, "*"))
+		} else {
+			p.prefix = strings.ToLower(line)
+		}
+		if strings.Contains(p.prefix, "*") {
+			panic(fmt.Errorf("%s: %q — \"*\" is only allowed as the last character", excludedTypesFile, line))
+		}
+		patterns = append(patterns, p)
+	}
+	return patterns
 }

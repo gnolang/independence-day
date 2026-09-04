@@ -37,6 +37,8 @@ const TOTAL_AIRDROP_TESTS = 700000000
 
 func TestFinalizedSupplyConstants(t *testing.T) {
 	assert.Equal(t, 632000000, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
+	assert.Equal(t, 300000000, TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING)
+	assert.Equal(t, 150000000, TOTAL_INVESTORS_UNLOCKED)
 
 	// The cap covers everything that lands in mkgenesis/balances.txt.gz, which
 	// is the buckets PLUS the non-airdrop premine. The previous version of this
@@ -47,10 +49,28 @@ func TestFinalizedSupplyConstants(t *testing.T) {
 			TOTAL_AIRDROP_ATONE+
 			TOTAL_AIRDROP_NT+
 			TOTAL_AIRDROP_NT_LLC+
-			TOTAL_AIRDROP_CONTRIBS+
-			TOTAL_AIRDROP_GOVDAO_FOUNDERS+
-			TOTAL_PREMINE_NON_AIRDROP,
+			TOTAL_TREASURY_CORE+
+			TOTAL_TREASURY_ECOSYSTEM+
+			TOTAL_TREASURY_VALIDATOR,
 	)
+}
+
+// TestTreasurySplitPreservesTheAggregate is the property that makes the split a
+// re-shaping rather than a reallocation: the three treasury addresses plus what
+// is charged to them must still equal the 120,000,000 of §120-122.
+func TestTreasurySplitPreservesTheAggregate(t *testing.T) {
+	assert.Equal(t, 120000000,
+		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR)
+
+	// What actually reaches the three addresses, after the founders and the
+	// premine are charged out of them.
+	assert.Equal(t, 117648000,
+		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
+		"must equal the single GovDAO line it replaces")
+
+	// §333: the founders must not be paid from Ecosystem.
+	assert.Zero(t, TOTAL_TREASURY_ECOSYSTEM-TOTAL_TREASURY_ECOSYSTEM_NET-PREMINE_CHARGED_TO_ECOSYSTEM)
+	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, FOUNDERS_CHARGED_TO_CORE)
 }
 
 // TestPremineMatchesFile keeps TOTAL_PREMINE_NON_AIRDROP honest against the
@@ -126,6 +146,130 @@ func TestGenesisFileTotal(t *testing.T) {
 		"%s total is wrong — did you change a constant without running `make` from the repo root?",
 		balancesFile)
 	t.Logf("%s: %d rows, %d ugnot (%.6f GNOT)", balancesFile, rows, sum, float64(sum)/1e6)
+}
+
+// TestAssignRefusesToOverwrite locks in the guard at the three fixed-allocation
+// call sites. Before it existed these were plain map writes, so a treasury or
+// founder address that also held ATOM/ATONE would have had its snapshot
+// entitlement silently replaced.
+func TestAssignRefusesToOverwrite(t *testing.T) {
+	dist := map[string]Distribution{}
+
+	// An address with no prior entitlement is fine.
+	assert.NotPanics(t, func() { assign(dist, test2_address_gno, 1000) })
+	assert.Equal(t, "1000000000", whole(dist[test2_address_gno].Ugnot.String()))
+
+	// A zero-valued placeholder is also fine — qualify() inserts those for
+	// every snapshot address, including ones that qualify for nothing.
+	dist2 := map[string]Distribution{
+		ledger_address_gno: {Ugnot: types.ZeroDec()},
+	}
+	assert.NotPanics(t, func() { assign(dist2, ledger_address_gno, 1000) })
+
+	// A real entitlement must not be silently discarded.
+	dist3 := map[string]Distribution{
+		ledger_address_gno: {
+			Account: Account{Address: ledger_address_cosmos},
+			Ugnot:   types.NewDec(42),
+		},
+	}
+	assert.Panics(t, func() { assign(dist3, ledger_address_gno, 1000) })
+}
+
+// TestHardcodedAddressesAreValid covers every address written into the sheet
+// without being derived from a snapshot.
+func TestHardcodedAddressesAreValid(t *testing.T) {
+	assert.NotPanics(t, validateHardcodedAddresses)
+
+	for _, addr := range append([]string{
+		TREASURY_CORE_ADDRESS, TREASURY_ECOSYSTEM_ADDRESS, TREASURY_VALIDATOR_ADDRESS,
+		INVESTORS_UNLOCKED_ADDRESS, INVESTORS_VESTING_ADDRESS, NT_LLC_ADDRESS,
+		MULTISIG_NT2_ADDRESS,
+	}, govdaoFounders...) {
+		key, err := addrKey(addr)
+		require.NoError(t, err, "address %s", addr)
+		assert.Equal(t, addr, key, "address %s is not in canonical g1 form", addr)
+	}
+
+	assert.Len(t, govdaoFounders, 7, "TOTAL_AIRDROP_GOVDAO_FOUNDERS is divided by len(govdaoFounders)")
+	assert.Zero(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS%len(govdaoFounders),
+		"founders budget must divide evenly, otherwise the remainder is silently dropped")
+}
+
+// TestExcludedTypesDefaultsToNoOp is the property that makes this mechanism safe
+// to merge ahead of the policy decision it exists for.
+func TestExcludedTypesDefaultsToNoOp(t *testing.T) {
+	assert.Empty(t, loadExcludedTypes(),
+		"policy/excluded-types.txt must ship with every pattern commented out")
+	assert.Empty(t, specialExcluded,
+		"no address may be excluded by class until a pattern is uncommented")
+}
+
+func TestTypePatternMatching(t *testing.T) {
+	exact := typePattern{raw: "CEX", prefix: "cex"}
+	assert.True(t, exact.matches("CEX"))
+	assert.True(t, exact.matches("  cex  "), "trimmed and case-insensitive")
+	assert.False(t, exact.matches("CEX or DEX"), "exact must not match a longer type")
+
+	glob := typePattern{raw: "Upbit*", prefix: "upbit", glob: true}
+	assert.True(t, glob.matches("Upbit #01 (Deposit)"))
+	assert.True(t, glob.matches("Upbit #20 (Staking)"))
+	assert.False(t, glob.matches("Bithumb #04"))
+
+	blank := typePattern{raw: "?", prefix: "?"}
+	assert.True(t, blank.matches("?"))
+	assert.False(t, blank.matches(""))
+}
+
+// TestSpecialAccountsCSVIsParseable guards the loader against the file it reads:
+// special-accounts.csv is hand-maintained, has ragged rows and at least one bare
+// double quote, and a parse failure here would be a panic at init.
+func TestSpecialAccountsCSVIsParseable(t *testing.T) {
+	assert.NotPanics(t, loadSpecialAccountExclusions)
+}
+
+// TestSkipIsHRPAgnostic is the regression test for the DokiaCapital leak: every
+// excluded.txt entry is written in cosmos1… form, but qualifyAtone() feeds skip()
+// the atone1… encoding of the same 20-byte key.
+func TestSkipIsHRPAgnostic(t *testing.T) {
+	const (
+		dokiaCosmos = "cosmos14lultfckehtszvzw4ehu0apvsr77afvyhgqhwh"
+		dokiaAtone  = "atone14lultfckehtszvzw4ehu0apvsr77afvyegusc0"
+		dokiaGno    = "g14lultfckehtszvzw4ehu0apvsr77afvyy5u50n"
+	)
+
+	kc, err := addrKey(dokiaCosmos)
+	require.NoError(t, err)
+	ka, err := addrKey(dokiaAtone)
+	require.NoError(t, err)
+	assert.Equal(t, kc, ka, "the two encodings must collapse to one key")
+	assert.Equal(t, dokiaGno, kc)
+
+	assert.True(t, skip(dokiaCosmos), "cosmos1 form must be excluded")
+	assert.True(t, skip(dokiaAtone), "atone1 form must be excluded — this is the bug")
+	assert.True(t, skip(dokiaGno), "g1 form must be excluded")
+
+	// A 32-byte ICA address must not blow up.
+	assert.False(t, skip("atone109450hc972uvgsmfrra7wfz4a7yzrvv8e8vky6wkucyaggxhw6aq8sq5ry"))
+}
+
+// TestIBCEscrowIsSkipped locks in the enforcement. The list was loaded but the
+// skip was commented out, so 106 keyless accounts were funded.
+func TestIBCEscrowIsSkipped(t *testing.T) {
+	// channel-2, the Osmosis transfer escrow — the largest of the funded ones.
+	const (
+		escrowCosmos = "cosmos12k2pyuylm9t7ugdvz67h9pg4gmmvhn5vlx9j35"
+		escrowGno    = "g12k2pyuylm9t7ugdvz67h9pg4gmmvhn5vv6e3ss"
+	)
+
+	key, err := addrKey(escrowCosmos)
+	require.NoError(t, err)
+	assert.Equal(t, escrowGno, key)
+
+	assert.True(t, skip(escrowCosmos), "cosmos1 form must be skipped")
+	assert.True(t, skip(escrowGno), "g1 form must be skipped")
+
+	assert.Len(t, ibcEscrowAddress, 426, "one escrow account per channel, 0..425")
 }
 
 func TestConvertAddress(t *testing.T) {
