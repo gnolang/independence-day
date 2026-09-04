@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -158,6 +159,25 @@ func TestGnot(t *testing.T) {
 			t.Errorf("gnot(%d) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+func writeGz(t *testing.T, path, content string) string {
+	t.Helper()
+
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("creating %s: %v", path, err)
+	}
+	defer f.Close()
+
+	zw := gzip.NewWriter(f)
+	if _, err := zw.Write([]byte(content)); err != nil {
+		t.Fatalf("writing %s: %v", path, err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("closing %s: %v", path, err)
+	}
+	return path
 }
 
 func writeTemp(t *testing.T, name, content string) string {

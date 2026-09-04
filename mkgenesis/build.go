@@ -18,9 +18,10 @@ const denom = "ugnot"
 //
 // line is carried alongside amount because it is both what gets written and
 // what the sort tie-break compares; rendering it once avoids rebuilding it for
-// every comparison.
+// every comparison. addr reuses the map key, so it costs no allocation.
 type row struct {
 	amount int64
+	addr   string
 	line   string
 }
 
@@ -29,7 +30,16 @@ func runBuild(args []string) error {
 	genbalance := fs.String("genbalance", "../allocate/genbalance.txt.gz", "gzipped airdrop rows, <source>:<addr>=<amount>ugnot")
 	premine := fs.String("premine", "non-airdrop.txt", "hand-written premine rows, # starts a comment")
 	out := fs.String("out", "balances.txt", "merged output")
+	vestingStart := fs.Int64("vesting-start", 0, "unix seconds GNOT becomes transferrable; 0 disables vesting")
+	vestingEnd := fs.Int64("vesting-end", 0, "unix seconds the schedule completes, normally start + 24 months")
+	vestingUnlockPct := fs.Int64("vesting-unlock-pct", 4, "percent unlocked at -vesting-start")
+	vestingExempt := fs.String("vesting-exempt", "", "addresses that receive no schedule, space- or comma-separated")
 	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	vest, err := newVesting(*vestingStart, *vestingEnd, *vestingUnlockPct, *vestingExempt)
+	if err != nil {
 		return err
 	}
 
@@ -42,7 +52,7 @@ func runBuild(args []string) error {
 	}
 
 	rows := sortRows(totals)
-	if err := writeRows(*out, rows); err != nil {
+	if err := writeRows(*out, rows, vest); err != nil {
 		return err
 	}
 
@@ -51,6 +61,7 @@ func runBuild(args []string) error {
 		total += r.amount
 	}
 	fmt.Printf("%s: %d rows, %d %s\n", *out, len(rows), total, denom)
+	fmt.Println(vest.describe())
 	return nil
 }
 
@@ -146,7 +157,13 @@ func parseRow(line string) (string, int64, error) {
 		return "", 0, fmt.Errorf("empty address in %q", line)
 	}
 
+	// A vesting schedule is appended as ";vesting=<coins>,<start>,<end>". The
+	// balance is what precedes it; the schedule is drawn from that balance, not
+	// added to it, so it must not be counted twice.
 	digits := line[eq+1:]
+	if semi := strings.IndexByte(digits, ';'); semi >= 0 {
+		digits = digits[:semi]
+	}
 	if !strings.HasSuffix(digits, denom) {
 		return "", 0, fmt.Errorf("missing %q suffix in %q", denom, line)
 	}
@@ -175,6 +192,7 @@ func sortRows(totals map[string]int64) []row {
 	for addr, amount := range totals {
 		rows = append(rows, row{
 			amount: amount,
+			addr:   addr,
 			line:   addr + "=" + strconv.FormatInt(amount, 10) + denom,
 		})
 	}
@@ -189,7 +207,11 @@ func sortRows(totals map[string]int64) []row {
 	return rows
 }
 
-func writeRows(path string, rows []row) error {
+// writeRows writes the sorted rows, appending each row's vesting schedule if
+// there is one. Vesting is applied here, after the sort, so that the schedule
+// suffix cannot influence the row order — the same reason the shell version
+// rewrote the file in place once sort had already run.
+func writeRows(path string, rows []row, vest *vesting) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
@@ -198,7 +220,7 @@ func writeRows(path string, rows []row) error {
 
 	w := bufio.NewWriter(f)
 	for _, r := range rows {
-		if _, err := w.WriteString(r.line); err != nil {
+		if _, err := w.WriteString(vest.apply(r)); err != nil {
 			return err
 		}
 		if err := w.WriteByte('\n'); err != nil {

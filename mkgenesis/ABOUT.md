@@ -57,6 +57,50 @@ go run . readme    # balances.txt -> README.md
 go run . supply    # totals and sha256 for both committed artifacts
 ```
 
+## Vesting (Constitution §132-138)
+
+**Off by default.** With `VESTING_START` unset the output is byte-identical to a build from before the
+vesting pass existed — `go test ./...` asserts exactly that.
+
+```sh
+make VESTING_START=<unix> VESTING_END=<unix>
+```
+
+Every row then gains the suffix `gnogenesis balances add` parses:
+
+```
+g1…=632000000000000ugnot;vesting=606720000000000ugnot,1780000000,1843072000
+```
+
+§132 asks for *"4% unlocked on the day $GNOT becomes transferrable … and a 4% unlock every subsequent
+month for 24 months"*. A continuous linear schedule over 24 months expresses that **exactly**, because
+`4 + 96m/24 = 4(m+1)` — at month *m* the holder has `4(m+1)%` either way. So the vesting portion is 96%
+of the balance (`VESTING_UNLOCK_PCT` defaults to 4), `start` is the transferability date and `end` is
+24 months later.
+
+| variable | flag | default | meaning |
+|---|---|---|---|
+| `VESTING_START` | `-vesting-start` | *(empty — off)* | unix seconds; the day GNOT becomes transferrable |
+| `VESTING_END` | `-vesting-end` | *(empty)* | unix seconds; `START` + 24 months |
+| `VESTING_UNLOCK_PCT` | `-vesting-unlock-pct` | `4` | percent unlocked at `START` |
+| `VESTING_EXEMPT` | `-vesting-exempt` | *(empty)* | addresses that get no schedule |
+
+`VESTING_EXEMPT` exists for §136-138 — *"150,000,000 $GNOT from the Investors allocation will be
+unlocked at the mainnet launch"* — which is only expressible once that tranche has an address of its
+own. While Investors and NT,LLC share one address, one address would need two schedules and the
+exception cannot be written down at all.
+
+Two properties worth knowing:
+
+- The schedule is applied **after** the sort, so it cannot influence row order. A vested sheet and a
+  bare one list the same addresses in the same sequence.
+- The suffix is **not** added to the balance — it is drawn from it. `README.md`'s total and
+  `make supply` both read the balance and ignore the schedule, so a vested sheet still totals
+  1,332,999,998.378908 GNOT.
+
+The arithmetic is `int64`. The awk version this replaced accumulated in `float64` and had to refuse to
+run once `amount * pct` reached 2^53; that limit is gone.
+
 ## Reproducibility notes
 
 - `balances.txt` **is** bit-reproducible, and `go test ./...` proves it: the golden test rebuilds it
