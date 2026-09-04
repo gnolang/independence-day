@@ -48,6 +48,47 @@ make        # rebuilds balances.txt, balances.txt.gz and README.md
 make re     # clean + rebuild
 ```
 
+## Vesting (Constitution §132-138)
+
+**Off by default.** With `VESTING_START` unset the output is byte-identical to a build from before the
+vesting pass existed.
+
+```sh
+make VESTING_START=<unix> VESTING_END=<unix>
+```
+
+Every row then gains the suffix `gnogenesis balances add` parses:
+
+```
+g1…=632000000000000ugnot;vesting=606720000000000ugnot,1780000000,1843072000
+```
+
+§132 asks for *"4% unlocked on the day $GNOT becomes transferrable … and a 4% unlock every subsequent
+month for 24 months"*. A continuous linear schedule over 24 months expresses that **exactly**, because
+`4 + 96m/24 = 4(m+1)` — at month *m* the holder has `4(m+1)%` either way. So `OriginalVesting` is 96% of
+the balance (`VESTING_UNLOCK_PCT` defaults to 4), `start` is the transferability date and `end` is
+24 months later.
+
+| variable | default | meaning |
+|---|---|---|
+| `VESTING_START` | *(empty — off)* | unix seconds; the day GNOT becomes transferrable |
+| `VESTING_END` | *(empty)* | unix seconds; `START` + 24 months |
+| `VESTING_UNLOCK_PCT` | `4` | percent unlocked at `START` |
+| `VESTING_EXEMPT` | *(empty)* | space-separated addresses that get no schedule |
+
+`VESTING_EXEMPT` exists for §136-138 — *"150,000,000 $GNOT from the Investors allocation will be
+unlocked at the mainnet launch"* — which is only expressible once that tranche has an address of its
+own. While Investors and NT,LLC share one address, one address would need two schedules and the
+exception cannot be written down at all.
+
+The pass runs **here rather than in `allocate/`** because a schedule is a function of an address's
+*final* balance, and that is only known after the premine has been merged and duplicate addresses
+summed.
+
+Amounts are computed as `unlocked = floor(amount × pct / 100)`, `vesting = amount − unlocked`, so the
+two always add back to the exact balance. awk arithmetic is float64, so the pass **refuses to run**
+rather than round silently if any `amount × pct` would exceed 2^53.
+
 Requires GNU `awk` (`gawk`) and GNU `zcat`. On macOS: `brew install gawk coreutils`, or run the root
 `make`, which checks for them.
 

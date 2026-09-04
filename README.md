@@ -3,9 +3,14 @@
 **The auditable record of the GNOT genesis allocation.**
 
 This repository computes, from public chain snapshots and a published set of rules, how much GNOT every
-address receives at genesis. It produced the balance sheet that launched **gnoland1** — 3,262,505
-accounts — and every input, intermediate and script used to get there is committed here so that anyone
-can re-derive the numbers independently.
+address receives at genesis. It produced the balance sheet that launched **gnoland1** — **3,262,507**
+accounts, at commit [`9dec38a4`](https://github.com/gnolang/independence-day/tree/9dec38a4a72c9e84db7e78ae010370de250f2d64),
+totalling 1,002,461,998.383260 GNOT — and every input, intermediate and script used to get there is
+committed here so that anyone can re-derive the numbers independently.
+
+Note that `main` has moved on since: the row count and the totals on this branch are **not** the ones
+that launched `gnoland1`. [`docs/history.md`](docs/history.md) records which commit produced which
+chain.
 
 > **Want to run a gnoland1 validator?** That lives elsewhere:
 > <https://github.com/gnolang/gno/tree/chain/gnoland1/misc/deployments/gnoland1>

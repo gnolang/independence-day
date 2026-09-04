@@ -1,0 +1,57 @@
+# Exclusion by class, applied to the `type` column of special-accounts.csv.
+#
+# EMPTY BY DEFAULT. Every line below is commented out, so this file currently
+# excludes nothing and the generated balance sheet is unaffected. Uncomment a
+# line to remove that whole class from the airdrop.
+#
+# Matching is on the `type` column, exactly, except that a single trailing `*`
+# matches any type with that prefix — which is what makes `Upbit*` cover
+# `Upbit #01 (Deposit)` through `Upbit #20 (Staking)`. Matching is
+# case-insensitive and ignores surrounding whitespace. A pattern that matches no
+# row is an error, so a typo cannot silently exclude nothing.
+#
+# Addresses are matched on the 20-byte account payload, not the bech32 string,
+# so one entry covers the cosmos1… and atone1… encodings of the same key.
+#
+# WHAT THIS COSTS. Amounts are each class's total in the current sheet, measured
+# not estimated. Excluding a class does NOT reduce total supply: the airdrop
+# buckets are fixed at 350M (ATOM) and 231M (AtomOne) and are distributed
+# proportionally, so every excluded GNOT is redistributed to the remaining
+# holders of that bucket. Excluding is a transfer from the named class to
+# everyone else, not a burn.
+#
+#   pattern                    # addrs, GNOT in the current sheet
+# ------------------------------------------------------------------
+# Binance*                   #  2 addr,  29,998,785.962219 GNOT
+# DokiaCapital*              #  3 addr,  26,628,545.086067 GNOT
+# CEX                        # 13 addr,  18,828,209.342958 GNOT
+# Kraken*                    #  1 addr,  18,037,356.809296 GNOT
+# IBC Account                # 11 addr,  16,790,414.475611 GNOT
+# Coinbase*                  #  6 addr,  13,497,862.165079 GNOT
+# Upbit*                     # 13 addr,   6,876,075.778635 GNOT
+# OKK*                       #  1 addr,   2,303,192.024487 GNOT
+# Bithumb*                   #  4 addr,     950,433.405071 GNOT
+# ?                          #  5 addr,     213,785.180301 GNOT
+# MEXC*                      #  1 addr,     155,801.003465 GNOT
+# CEX or DEX                 #  2 addr,       3,764.469880 GNOT
+# Wallet                     #  3 addr,          38.818970 GNOT
+# DEX or Wallet              #  1 addr,           5.155237 GNOT
+# Mining Pool                #  1 addr,           0.167321 GNOT
+# bonded tokens              #  1 addr,           0.000000 GNOT
+# Ignite                     #  1 addr,           0.000000 GNOT
+# Distribution               #  1 addr,           0.000000 GNOT
+# Interchain Foundation*     #  4 addr,           0.000000 GNOT
+# Unbonding tokens           #  1 addr,           0.000000 GNOT
+#
+# Three rows carry an empty `type`. They cannot be selected by class and would
+# need a line in excluded.txt instead; together they hold 557,844.97 GNOT.
+#
+# BEFORE UNCOMMENTING ANYTHING, read policy/README.md. Two traps:
+#
+#  1. Several rows are validator OPERATOR addresses, not exchange hot wallets.
+#     Excluding a validator operator does not take GNOT from the exchange — it
+#     takes it from an address that custodies other people's delegations. The
+#     `DokiaCapital*` and `CEX` classes both contain such rows.
+#  2. The four Interchain Foundation rows already hold zero, because
+#     policy/excluded.txt excludes them by address. They are listed here only so
+#     the classification is complete.
