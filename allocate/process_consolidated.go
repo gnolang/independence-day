@@ -2,6 +2,7 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -41,10 +42,12 @@ type Distribution struct {
 //	inputs/  — immutable chain snapshots, never edited after capture
 //	policy/  — human-editable decisions (exclusions, annotations)
 const (
-	cosmosSnapshotFile = "../inputs/cosmoshub-10562840.json.gz"
-	atoneSnapshotFile  = "../inputs/atomone-6439117.json.gz"
-	excludedFile       = "../policy/excluded.txt"
-	ibcEscrowFile      = "../policy/ibc-escrow-addresses.txt"
+	cosmosSnapshotFile  = "../inputs/cosmoshub-10562840.json.gz"
+	atoneSnapshotFile   = "../inputs/atomone-6439117.json.gz"
+	excludedFile        = "../policy/excluded.txt"
+	excludedTypesFile   = "../policy/excluded-types.txt"
+	specialAccountsFile = "../policy/special-accounts.csv"
+	ibcEscrowFile       = "../policy/ibc-escrow-addresses.txt"
 
 	// outputFile is consumed by mkgenesis/Makefile.
 	outputFile = "genbalance.txt.gz"
@@ -98,10 +101,16 @@ const (
 var ibcEscrowAddress = map[string]bool{}
 var excludedAddresses = map[string]bool{}
 
+// specialExcluded holds addresses removed by CLASS via policy/excluded-types.txt,
+// keyed by the canonical g1 form so one entry covers every bech32 encoding of the
+// same key. Empty unless a pattern is uncommented in that file.
+var specialExcluded = map[string]bool{}
+
 func init() {
 	validateHardcodedAddresses()
 	loadEscrowAddress()
 	loadExcludedAddresses()
+	loadSpecialAccountExclusions()
 }
 
 func main() {
@@ -501,12 +510,134 @@ func skip(address string) bool {
 		return true
 	}
 
+	// skip addresses excluded by class via policy/excluded-types.txt
+	if len(specialExcluded) > 0 {
+		if key, err := addrKey(address); err == nil && specialExcluded[key] {
+			return true
+		}
+	}
+
 	// skip ibc escrow address
 	if ibcEscrowAddress[address] {
 		// return true
 	}
 
 	return false
+}
+
+// loadSpecialAccountExclusions reads policy/excluded-types.txt and, for every
+// pattern in it, removes the matching rows of policy/special-accounts.csv from
+// the airdrop.
+//
+// special-accounts.csv has always been annotation that no code read. This makes
+// it actionable without turning it into an address list: the decision stays
+// expressed as "no exchanges" rather than as 30 hand-copied addresses that go
+// stale the moment the CSV is updated.
+//
+// Both files are read even when no pattern is active, so a malformed CSV or a
+// pattern that matches nothing is caught on every run rather than on the day
+// somebody first switches an exclusion on.
+func loadSpecialAccountExclusions() {
+	patterns := loadExcludedTypes()
+
+	f, err := os.Open(specialAccountsFile)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	// The file is hand-maintained and has been since 2022: rows have varying
+	// field counts and at least one comment field contains a bare double quote.
+	// Both are tolerated rather than "fixed", so that this loader never becomes a
+	// reason to reformat a human-curated policy file.
+	r.FieldsPerRecord = -1
+	r.LazyQuotes = true
+
+	rows, err := r.ReadAll()
+	if err != nil {
+		panic(fmt.Errorf("%s: %w", specialAccountsFile, err))
+	}
+
+	matched := make([]int, len(patterns))
+	for i, row := range rows {
+		if i == 0 || len(row) == 0 {
+			continue // header
+		}
+		addr := strings.TrimSpace(row[0])
+		if !strings.HasPrefix(addr, "cosmos1") {
+			continue // blank line, or the cosmosxxxx example row
+		}
+		key, err := addrKey(addr)
+		if err != nil {
+			panic(fmt.Errorf("%s line %d: invalid address %q: %w", specialAccountsFile, i+1, addr, err))
+		}
+
+		var typ string
+		if len(row) > 1 {
+			typ = strings.TrimSpace(row[1])
+		}
+		for pi, p := range patterns {
+			if p.matches(typ) {
+				specialExcluded[key] = true
+				matched[pi]++
+			}
+		}
+	}
+
+	for i, p := range patterns {
+		if matched[i] == 0 {
+			panic(fmt.Errorf("%s: pattern %q matched no row in %s — typo?",
+				excludedTypesFile, p.raw, specialAccountsFile))
+		}
+		fmt.Printf("excluded-types: %q matched %d row(s)\n", p.raw, matched[i])
+	}
+}
+
+// typePattern is an exact type match, or a prefix match if it ends in "*".
+type typePattern struct {
+	raw    string
+	prefix string
+	glob   bool
+}
+
+func (p typePattern) matches(typ string) bool {
+	typ = strings.ToLower(strings.TrimSpace(typ))
+	if p.glob {
+		return strings.HasPrefix(typ, p.prefix)
+	}
+	return typ == p.prefix
+}
+
+func loadExcludedTypes() []typePattern {
+	content := osm.MustReadFile(excludedTypesFile)
+
+	var patterns []typePattern
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Allow a trailing "# comment" on an active line.
+		if i := strings.Index(line, "#"); i >= 0 {
+			line = strings.TrimSpace(line[:i])
+		}
+		if line == "" {
+			continue
+		}
+		p := typePattern{raw: line}
+		if strings.HasSuffix(line, "*") {
+			p.glob = true
+			p.prefix = strings.ToLower(strings.TrimSuffix(line, "*"))
+		} else {
+			p.prefix = strings.ToLower(line)
+		}
+		if strings.Contains(p.prefix, "*") {
+			panic(fmt.Errorf("%s: %q — \"*\" is only allowed as the last character", excludedTypesFile, line))
+		}
+		patterns = append(patterns, p)
+	}
+	return patterns
 }
 
 func loadEscrowAddress() {
