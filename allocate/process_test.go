@@ -87,7 +87,7 @@ func TestPremineMatchesFile(t *testing.T) {
 // The expected figure is the cap minus the truncation residual, which is a
 // property of the data and cannot be derived from the constants alone.
 func TestGenesisFileTotal(t *testing.T) {
-	const expected = int64(1332999998125816) // 1,333,000,000 GNOT − 1.874184 truncation
+	const expected = int64(1332999998328067) // 1,333,000,000 GNOT − 1.671933 truncation
 
 	f, err := os.Open(balancesFile)
 	require.NoError(t, err)
@@ -229,6 +229,25 @@ func TestSkipIsHRPAgnostic(t *testing.T) {
 
 	// A 32-byte ICA address must not blow up.
 	assert.False(t, skip("atone109450hc972uvgsmfrra7wfz4a7yzrvv8e8vky6wkucyaggxhw6aq8sq5ry"))
+}
+
+// TestIBCEscrowIsSkipped locks in the enforcement. The list was loaded but the
+// skip was commented out, so 106 keyless accounts were funded.
+func TestIBCEscrowIsSkipped(t *testing.T) {
+	// channel-2, the Osmosis transfer escrow — the largest of the funded ones.
+	const (
+		escrowCosmos = "cosmos12k2pyuylm9t7ugdvz67h9pg4gmmvhn5vlx9j35"
+		escrowGno    = "g12k2pyuylm9t7ugdvz67h9pg4gmmvhn5vv6e3ss"
+	)
+
+	key, err := addrKey(escrowCosmos)
+	require.NoError(t, err)
+	assert.Equal(t, escrowGno, key)
+
+	assert.True(t, skip(escrowCosmos), "cosmos1 form must be skipped")
+	assert.True(t, skip(escrowGno), "g1 form must be skipped")
+
+	assert.Len(t, ibcEscrowAddress, 426, "one escrow account per channel, 0..425")
 }
 
 func TestConvertAddress(t *testing.T) {
