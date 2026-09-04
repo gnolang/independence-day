@@ -7,12 +7,30 @@
 
 GO ?= go
 
+# Vesting (Constitution §132-138). OFF by default: with VESTING_START unset the
+# build behaves exactly as it did before the vesting pass existed, and
+# balances.txt is byte-identical. See ABOUT.md.
+#
+#   make VESTING_START=1780000000 VESTING_END=1843072000
+#
+VESTING_START      ?=
+VESTING_END        ?=
+VESTING_UNLOCK_PCT ?= 4
+VESTING_EXEMPT     ?=
+
+VESTING_FLAGS =
+ifneq ($(VESTING_START),)
+VESTING_FLAGS = -vesting-start=$(VESTING_START) -vesting-end=$(VESTING_END) \
+                -vesting-unlock-pct=$(VESTING_UNLOCK_PCT) \
+                -vesting-exempt="$(VESTING_EXEMPT)"
+endif
+
 all: balances.txt.gz README.md
 
 re: clean all
 
 balances.txt: non-airdrop.txt ../allocate/genbalance.txt.gz
-	$(GO) run . build
+	$(GO) run . build $(VESTING_FLAGS)
 
 balances.txt.gz: balances.txt
 	rm -f $@
