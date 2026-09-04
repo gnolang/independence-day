@@ -58,23 +58,25 @@ const (
 // mkgenesis/balances.txt.gz — the buckets below AND the non-airdrop premine.
 const TOTAL_SUPPLY = 1333000000
 
-// TOTAL_PREMINE_NON_AIRDROP is the sum of mkgenesis/non-airdrop.txt: test1/test2,
-// two faucets, three named contributors and 45 GitHub requesters. That file was
-// last edited in July 2022 and the finalized 7-bucket breakdown does not budget
-// for it, so somebody has to pay for it.
+// TOTAL_PREMINE_NON_AIRDROP is the sum of mkgenesis/non-airdrop.txt: two
+// faucets, three named contributors and 45 GitHub requesters. The finalized
+// 7-bucket breakdown does not budget for it, so somebody has to pay for it.
+//
+// Was 2455000 until the test1 and test2 rows were removed on 2026-09-03 — both
+// were funded from mnemonics published in gnolang/gno's test fixtures.
 //
 // TestPremineMatchesFile asserts this constant against the actual file.
-const TOTAL_PREMINE_NON_AIRDROP = 2455000
+const TOTAL_PREMINE_NON_AIRDROP = 2345000
 
 // PREMINE_ABSORBED_FROM_CONTRIBS decides who pays for the premine above.
 // This is the ONE LINE to flip; everything else follows.
 //
 //	Option A  = 0        AND empty mkgenesis/non-airdrop.txt
-//	            -> 1,332,999,998.378908 GNOT. Drops 48 real contributors' rows.
-//	Option B  = 2455000  (RECOMMENDED) GovDAO Contributions absorbs it
+//	            -> drops all 48 remaining contributors' rows.
+//	Option B  = TOTAL_PREMINE_NON_AIRDROP  (SELECTED) GovDAO Contributions absorbs it
 //	            -> 1,332,999,998.378908 GNOT. Everyone keeps their row.
 //	Option C  = 0        keep the file, accept the overshoot
-//	            -> 1,335,454,998.378908 GNOT, i.e. 2,454,998.378908 over the cap.
+//	            -> TOTAL_PREMINE_NON_AIRDROP GNOT over the cap.
 //
 // (The residual 1.621092 below the cap is per-account Dec->int truncation across
 // 3.26M rows, in whole(). Deterministic and unavoidable without changing it.)

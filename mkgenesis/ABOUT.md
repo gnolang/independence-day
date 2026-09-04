@@ -27,18 +27,19 @@ this sheet and in a genesis transaction on the consuming side is a live hazard.
 
 ## The non-airdrop premine
 
-`non-airdrop.txt` was last edited in **July 2022**. It contributes **2,455,000 GNOT**:
+`non-airdrop.txt` contributes **2,345,000 GNOT**:
 
 | Group | GNOT |
 |---|---|
-| test1 + test2 | 110,000 |
 | faucet0 + faucet1 | 2,000,000 |
 | 3 named contributors | 300,000 |
 | 45 GitHub requesters | 45,000 |
 
-Two of these are funded by **publicly published mnemonics** (`test1`, `test2`); anyone can spend them.
-The premine is not part of the finalized bucket table in the root `README.md` and is not covered by any
-test.
+The `test1` and `test2` rows (110,000 GNOT) were removed on 2026-09-03: both were funded from mnemonics
+published in `gnolang/gno`'s own test fixtures, so anyone could spend them.
+
+The premine is charged to the Contributions bucket (`PREMINE_ABSORBED_FROM_CONTRIBS`), and its total is
+asserted against this file by `TestPremineMatchesFile`.
 
 ## Running it
 
