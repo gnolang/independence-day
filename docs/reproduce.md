@@ -13,19 +13,18 @@ make verify     # unit tests + independent cross-check + supply totals
 git status      # should be clean
 ```
 
-Requirements: Go 1.21+, GNU `awk` (`gawk`), GNU `zcat`, `jq`.
+Requirements: Go 1.21+ and `gzip`.
 
-- **macOS:** `brew install gawk coreutils jq`. Apple's `zcat` looks for `.Z` files and will fail; either
-  use `gzcat` from coreutils, or run `make ZCAT='gzip -dc'`. BSD `awk` also works
-  (`make AWK=awk`) and produces byte-identical output, but `gawk` is what the original run used.
-- **Debian/Ubuntu:** `apt install gawk gzip jq`.
+Both stages are Go, so there is nothing else to install: `gzip` ships with macOS and every Linux
+distribution. (`archive/manfred-recheck/` is a separate, archived derivation that still wants `gawk`,
+`jq` and sqlite. It is not reachable from any target in the root `Makefile`.)
 
 ### What "reproducible" means here
 
 | Artifact | Bit-reproducible? |
 |---|---|
 | `allocate/genbalance.txt.gz` | **Yes**, including the gzip container — Go's `gzip.Writer` emits `mtime=0, OS=255`. |
-| `mkgenesis/balances.txt` (uncompressed) | **Yes.** |
+| `mkgenesis/balances.txt` (uncompressed) | **Yes**, and `cd mkgenesis && go test ./...` asserts it against the committed artifacts. |
 | `mkgenesis/balances.txt.gz` | **Yes**, because the Makefile passes `gzip -n`. Without `-n`, gzip stores the mtime and filename and every rebuild differs. |
 
 Expected checksums for the current `main` are printed by `make supply`. If yours differ, that is worth
@@ -74,8 +73,6 @@ Between them, every input to the allocation has a second source.
 
 | Symptom | Cause |
 |---|---|
-| `zcat: can't stat: …gz (….gz.Z)` | macOS `zcat`. Use `make ZCAT='gzip -dc'`. |
-| `gawk: command not found` | `brew install gawk`, or `make AWK=awk`. |
 | `go run .` fails downloading modules | The root module pins a 2022 `gnolang/gno` revision on purpose. Do not `go get -u`. |
 | `balances.txt.gz` differs but `balances.txt` matches | You are on a build without `gzip -n`. Compare the uncompressed files. |
 | `crosscheck` reports a diff | One of the two artifacts was regenerated and the other was not. Run `make` from the repository root. |

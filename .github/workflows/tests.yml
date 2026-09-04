@@ -26,6 +26,14 @@ jobs:
         working-directory: ./allocate
         run: go test -v ./...
 
+      # Includes the golden test, which rebuilds balances.txt and README.md
+      # from the committed inputs and requires them to match the committed
+      # outputs byte for byte. That is what catches a PR changing allocate/
+      # without regenerating mkgenesis/.
+      - name: mkgenesis tests
+        working-directory: ./mkgenesis
+        run: go test -v ./...
+
       - name: Cross-check balances.txt.gz == genbalance.txt.gz + non-airdrop.txt
         working-directory: ./verify/crosscheck
         run: |
