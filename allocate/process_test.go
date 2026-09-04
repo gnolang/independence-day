@@ -87,7 +87,7 @@ func TestPremineMatchesFile(t *testing.T) {
 // The expected figure is the cap minus the truncation residual, which is a
 // property of the data and cannot be derived from the constants alone.
 func TestGenesisFileTotal(t *testing.T) {
-	const expected = int64(1332999998378908) // 1,333,000,000 GNOT − 1.621092 truncation
+	const expected = int64(1332999998125816) // 1,333,000,000 GNOT − 1.874184 truncation
 
 	f, err := os.Open(balancesFile)
 	require.NoError(t, err)
@@ -204,6 +204,31 @@ func TestTypePatternMatching(t *testing.T) {
 // double quote, and a parse failure here would be a panic at init.
 func TestSpecialAccountsCSVIsParseable(t *testing.T) {
 	assert.NotPanics(t, loadSpecialAccountExclusions)
+}
+
+// TestSkipIsHRPAgnostic is the regression test for the DokiaCapital leak: every
+// excluded.txt entry is written in cosmos1… form, but qualifyAtone() feeds skip()
+// the atone1… encoding of the same 20-byte key.
+func TestSkipIsHRPAgnostic(t *testing.T) {
+	const (
+		dokiaCosmos = "cosmos14lultfckehtszvzw4ehu0apvsr77afvyhgqhwh"
+		dokiaAtone  = "atone14lultfckehtszvzw4ehu0apvsr77afvyegusc0"
+		dokiaGno    = "g14lultfckehtszvzw4ehu0apvsr77afvyy5u50n"
+	)
+
+	kc, err := addrKey(dokiaCosmos)
+	require.NoError(t, err)
+	ka, err := addrKey(dokiaAtone)
+	require.NoError(t, err)
+	assert.Equal(t, kc, ka, "the two encodings must collapse to one key")
+	assert.Equal(t, dokiaGno, kc)
+
+	assert.True(t, skip(dokiaCosmos), "cosmos1 form must be excluded")
+	assert.True(t, skip(dokiaAtone), "atone1 form must be excluded — this is the bug")
+	assert.True(t, skip(dokiaGno), "g1 form must be excluded")
+
+	// A 32-byte ICA address must not blow up.
+	assert.False(t, skip("atone109450hc972uvgsmfrra7wfz4a7yzrvv8e8vky6wkucyaggxhw6aq8sq5ry"))
 }
 
 func TestConvertAddress(t *testing.T) {
