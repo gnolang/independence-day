@@ -38,6 +38,11 @@ const TOTAL_AIRDROP_TESTS = 700000000
 func TestFinalizedSupplyConstants(t *testing.T) {
 	assert.Equal(t, 632000000, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
 
+	// §123-124 / §136: the split must preserve the aggregate, and the unlocked
+	// tranche must be exactly the 150,000,000 the Constitution names.
+	assert.Equal(t, 300000000, TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING)
+	assert.Equal(t, 150000000, TOTAL_INVESTORS_UNLOCKED)
+
 	// The cap covers everything that lands in mkgenesis/balances.txt.gz, which
 	// is the buckets PLUS the non-airdrop premine. The previous version of this
 	// test summed only the buckets, which is why a 2,455,000 GNOT overshoot in
@@ -162,7 +167,8 @@ func TestHardcodedAddressesAreValid(t *testing.T) {
 	assert.NotPanics(t, validateHardcodedAddresses)
 
 	for _, addr := range append([]string{
-		MULTISIG_GOVDAO_ADDRESS, MULTISIG_NT1_ADDRESS, MULTISIG_NT2_ADDRESS,
+		MULTISIG_GOVDAO_ADDRESS, MULTISIG_NT2_ADDRESS,
+		INVESTORS_UNLOCKED_ADDRESS, INVESTORS_VESTING_ADDRESS, NT_LLC_ADDRESS,
 	}, govdaoFounders...) {
 		key, err := addrKey(addr)
 		require.NoError(t, err, "address %s", addr)
