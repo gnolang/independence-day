@@ -1,50 +1,27 @@
+# mkgenesis — merge the computed airdrop with the hand-written premine.
+#
+# The pipeline itself lives in Go (see main.go); this file only wires the
+# targets together. `gzip -n` stays here on purpose: Go's compress/gzip does
+# not reproduce the committed container byte-for-byte, and balances.txt.gz is
+# fetched by raw URL from outside this repository. See ABOUT.md.
+
+GO ?= go
+
 all: balances.txt.gz README.md
 
 re: clean all
 
+balances.txt: non-airdrop.txt ../allocate/genbalance.txt.gz
+	$(GO) run . build
+
 balances.txt.gz: balances.txt
-	rm -f balances.txt.gz
+	rm -f $@
 	gzip -n -k balances.txt
 
-balances.txt: non-airdrop.txt ../allocate/genbalance.txt.gz
-	# generate file
-	> $@.tmp
-	cat non-airdrop.txt | cut -d'#' -f1 | grep -vE '^\s*$$' >> $@.tmp
-	zcat ../allocate/genbalance.txt.gz | cut -d: -f2 >> $@.tmp
-	cat $@.tmp  | sed 's/=/ /;s/ugnot//' | gawk '{seen[$$1] += $$2 } END {for (i in seen) printf "%s=%dugnot\n", i,seen[i]  }'   |sort -t = -k 2 -n -r > $@ 
-	rm -f $@.tmp
-
 README.md: balances.txt
-	> $@.tmp
-	echo "# Genesis" >> $@.tmp
-	echo >> $@.tmp
-
-	echo "## lines" >> $@.tmp
-	echo '```' >> $@.tmp
-	wc -l balances.txt >> $@.tmp
-	echo '```' >> $@.tmp
-	echo >> $@.tmp
-
-	echo "## sum" >> $@.tmp
-	echo '```' >> $@.tmp
-	cat balances.txt | cut -d= -f2 | sed s/ugnot// | awk '{s+=$$1} END {print s "ugnot"}' >> $@.tmp
-	cat balances.txt | cut -d= -f2 | sed s/ugnot// | awk '{s+=$$1} END {print int(s/1000000) "gnot"}' >> $@.tmp
-	echo '```' >> $@.tmp
-	echo >> $@.tmp
-
-	echo "## duplicate accounts" >> $@.tmp
-	echo '```' >> $@.tmp
-	for addr in `cat balances.txt | cut -d= -f1 | sort | uniq -c  | grep -vE ' 1 ' | awk '{print $$2}'`; do grep $$addr balances.txt; done >> $@.tmp
-	echo '```' >> $@.tmp
-	echo >> $@.tmp
-
-	echo "## top 100 accounts" >> $@.tmp
-	echo '```' >> $@.tmp
-	head -n 100 balances.txt >> $@.tmp
-	echo '```' >> $@.tmp
-	echo >> $@.tmp
-
-	mv $@.tmp $@
+	$(GO) run . readme
 
 clean:
 	rm -f balances.txt
+
+.PHONY: all re clean

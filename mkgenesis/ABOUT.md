@@ -1,7 +1,7 @@
 # mkgenesis/ — the final merge
 
-> `README.md` in this directory is **generated** by `Makefile`. Do not hand-edit it. This file is the
-> hand-written explanation; `README.md` is the machine-written report.
+> `README.md` in this directory is **generated** by `go run . readme`. Do not hand-edit it. This file is
+> the hand-written explanation; `README.md` is the machine-written report.
 
 This is the last stage of the pipeline. It merges the computed airdrop with the hand-written premine and
 produces the file that a chain's genesis builder actually downloads.
@@ -48,17 +48,30 @@ make        # rebuilds balances.txt, balances.txt.gz and README.md
 make re     # clean + rebuild
 ```
 
-Requires GNU `awk` (`gawk`) and GNU `zcat`. On macOS: `brew install gawk coreutils`, or run the root
-`make`, which checks for them.
+The merge itself is Go (`main.go`, `build.go`, `readme.go`); the `Makefile` only wires the targets
+together. Requires Go and `gzip` — nothing else.
+
+```sh
+go run . build     # genbalance.txt.gz + non-airdrop.txt -> balances.txt
+go run . readme    # balances.txt -> README.md
+go run . supply    # totals and sha256 for both committed artifacts
+```
 
 ## Reproducibility notes
 
-- `balances.txt` **is** bit-reproducible. The `sort -t = -k 2 -n -r` has no `-s`, so equal amounts fall
-  back to whole-line comparison in both GNU and BSD sort. That tie-break is load-bearing — do not add
-  `-s`, and do not change the sort key.
+- `balances.txt` **is** bit-reproducible, and `go test ./...` proves it: the golden test rebuilds it
+  from the committed inputs and requires a byte-for-byte match against the committed `balances.txt.gz`
+  and `README.md`.
+- The row order is amount descending, ties broken by **whole-line descending byte order**. That
+  reproduces the `sort -t = -k 2 -n -r` this stage used to shell out to: it had no `-s`, so equal
+  amounts fell back to the last-resort whole-line comparison, which `-r` reversed too. The tie-break is
+  load-bearing — do not change it. Comparing bytes in Go also removes the old dependence on `LC_ALL`.
 - `balances.txt.gz` is bit-reproducible **only because** the Makefile passes `gzip -n`, which suppresses
   the stored mtime and filename. Without `-n` every rebuild produces a different `.gz` for identical
   content, which makes publishing a checksum meaningless.
+- The `.gz` is still written by `gzip`, not by Go. Go's `compress/gzip` produces a different (smaller)
+  container for identical content, and this path is a public contract — see below. `allocate/` does use
+  Go's writer, which is why the two committed `.gz` files carry different OS bytes.
 
 ## ⚠️ This path is a public contract
 

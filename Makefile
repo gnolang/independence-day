@@ -9,9 +9,6 @@
 # `git status` clean apart from mtimes. If it does not, that is a bug.
 
 GO      ?= go
-AWK     ?= gawk
-ZCAT    ?= zcat
-SHASUM  ?= shasum -a 256
 
 GENBALANCE := allocate/genbalance.txt.gz
 BALANCES   := mkgenesis/balances.txt.gz
@@ -43,6 +40,7 @@ verify: test crosscheck supply
 .PHONY: test
 test:
 	cd allocate && $(GO) test ./...
+	cd mkgenesis && $(GO) test ./...
 
 .PHONY: crosscheck
 crosscheck:
@@ -52,30 +50,23 @@ crosscheck:
 # the expected figure is a policy decision, not a fact about the code.
 .PHONY: supply
 supply:
-	@echo "== allocate/genbalance.txt.gz =="
-	@$(ZCAT) $(GENBALANCE) | wc -l | $(AWK) '{print $$1 " rows"}'
-	@$(ZCAT) $(GENBALANCE) | cut -d: -f2 | cut -d= -f2 | sed 's/ugnot//' \
-		| $(AWK) '{s+=$$1} END {printf "%d ugnot (%.6f GNOT)\n", s, s/1000000}'
-	@echo "== mkgenesis/balances.txt.gz =="
-	@$(ZCAT) $(BALANCES) | wc -l | $(AWK) '{print $$1 " rows"}'
-	@$(ZCAT) $(BALANCES) | cut -d= -f2 | sed 's/ugnot//' \
-		| $(AWK) '{s+=$$1} END {printf "%d ugnot (%.6f GNOT)\n", s, s/1000000}'
-	@echo "== sha256 =="
-	@$(SHASUM) $(GENBALANCE) $(BALANCES)
+	@$(GO) run ./mkgenesis supply -genbalance $(GENBALANCE) -balances $(BALANCES)
 
 ## ---------------------------------------------------------------- misc
 
+# The pipeline needs Go and gzip, nothing else. (archive/manfred-recheck/ is a
+# separate, archived derivation and still wants gawk, jq and sqlite; it is not
+# reachable from any target here.)
 .PHONY: tools
 tools:
 	@missing=0; \
-	for t in $(GO) $(AWK) $(ZCAT) jq; do \
+	for t in $(GO) gzip; do \
 		command -v $$t >/dev/null 2>&1 || { echo "MISSING: $$t"; missing=1; }; \
 	done; \
 	if [ $$missing -eq 1 ]; then \
 		echo; \
-		echo "macOS: brew install gawk coreutils jq   (coreutils provides GNU zcat as gzcat;"; \
-		echo "       or run: make ZCAT='gzip -dc')"; \
-		echo "Debian/Ubuntu: apt install gawk gzip jq"; \
+		echo "macOS: gzip ships with the system; install Go from https://go.dev/dl/"; \
+		echo "Debian/Ubuntu: apt install golang gzip"; \
 		exit 1; \
 	fi; \
 	echo "all required tools present"

@@ -115,7 +115,7 @@ make            # allocate -> genbalance.txt.gz -> mkgenesis -> balances.txt.gz
 make verify     # unit tests + independent cross-check + supply total
 ```
 
-Requirements: Go 1.21+, GNU `awk` (`gawk`), GNU `gzip`/`zcat`, `jq`. On macOS: `brew install gawk`.
+Requirements: Go 1.21+ and `gzip`. Both stages are Go, so there is nothing else to install.
 
 **The pipeline is bit-reproducible.** Running `make` on a clean checkout regenerates
 `allocate/genbalance.txt.gz` byte-for-byte, and `mkgenesis/balances.txt` byte-for-byte. Verified on
@@ -140,7 +140,7 @@ External tooling fetches raw URLs into this repository. **These two paths are a 
 clarity. Anything that moves `mkgenesis/balances.txt.gz` breaks every unpinned consumer silently — the
 download just 404s. If it ever has to move, land the redirect first.
 
-`mkgenesis/README.md` is **generated** by `mkgenesis/Makefile`. Do not hand-edit it.
+`mkgenesis/README.md` is **generated** by `cd mkgenesis && go run . readme`. Do not hand-edit it.
 
 ## Credits
 

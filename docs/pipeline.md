@@ -49,7 +49,7 @@ All in `allocate/process_consolidated.go` unless noted.
 | PHOTON→ATONE ratio | `PHOTON_TO_ATONE_RATIO`, `allocate/atone.go` |
 | Input/output file paths | the `const` block at the top of `process_consolidated.go` |
 | The premine | `mkgenesis/non-airdrop.txt` |
-| Duplicate summing | the `gawk` line in `mkgenesis/Makefile` |
+| Duplicate summing | `accumulate()` in `mkgenesis/build.go` |
 
 There is deliberately no config file. Every number that affects an allocation is a Go constant in one
 file, so `git log -p allocate/process_consolidated.go` is a complete history of the economics.
@@ -94,7 +94,7 @@ Three properties of that consumer are worth knowing when editing this repository
 1. **The download is pinned by commit sha and has no checksum.** Changing `main` does not change what a
    pinned deployment fetches; conversely, a pinned deployment can be arbitrarily stale relative to `main`.
 2. **The merge is last-write-wins, not additive.** If an address appears both in this sheet and as a
-   genesis-transaction fee payer, one of the two values is silently discarded. This stage's `gawk` sums
+   genesis-transaction fee payer, one of the two values is silently discarded. This stage sums
    duplicates; the consumer does not.
 3. **Nothing on the consuming side asserts total supply.** `gnogenesis verify` validates bank *params*,
    not the balance list. If this file is wrong, nothing downstream will say so.
