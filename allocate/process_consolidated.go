@@ -86,16 +86,34 @@ const TOTAL_PREMINE_NON_AIRDROP = 2345000
 const PREMINE_ABSORBED_FROM_CONTRIBS = TOTAL_PREMINE_NON_AIRDROP // option B
 
 const (
-	TOTAL_AIRDROP_ATOM            = 350000000
-	TOTAL_AIRDROP_ATONE           = 231000000
-	TOTAL_AIRDROP_CONTRIBS        = 119993000 - PREMINE_ABSORBED_FROM_CONTRIBS
-	TOTAL_AIRDROP_NT              = 300000000
+	TOTAL_AIRDROP_ATOM     = 350000000
+	TOTAL_AIRDROP_ATONE    = 231000000
+	TOTAL_AIRDROP_CONTRIBS = 119993000 - PREMINE_ABSORBED_FROM_CONTRIBS
+	// Constitution §123-124: Investors 300,000,000 and NT,LLC 332,000,000 are two
+	// buckets, not one. §136-138 then carves 150,000,000 out of Investors:
+	//
+	//   §136  "150,000,000 $GNOT from the Investors allocation will be unlocked
+	//          at the mainnet launch"
+	//
+	// One address carries one vesting schedule, so the unlocked tranche needs an
+	// address of its own. While all 632M sits on nt1 the exception is not merely
+	// unimplemented — it is UNEXPRESSIBLE.
+	TOTAL_INVESTORS_UNLOCKED      = 150000000 // liquid at mainnet, §136
+	TOTAL_INVESTORS_VESTING       = 150000000 // §132 schedule
+	TOTAL_AIRDROP_NT              = TOTAL_INVESTORS_UNLOCKED + TOTAL_INVESTORS_VESTING
 	TOTAL_AIRDROP_NT_LLC          = 332000000
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
 
-	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
-	MULTISIG_NT2_ADDRESS    = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
-	MULTISIG_GOVDAO_ADDRESS = "g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf" // govdao t1
+	// PLACEHOLDERS — these addresses do not exist yet. validateHardcodedAddresses()
+	// refuses to run until they are replaced, so this cannot ship by accident.
+	//
+	// The existing nt1 multisig g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf can be
+	// reused for ONE of the three; which one is a decision, so no line claims it.
+	INVESTORS_UNLOCKED_ADDRESS = "TODO_INVESTORS_UNLOCKED_ADDR" // no vesting schedule
+	INVESTORS_VESTING_ADDRESS  = "TODO_INVESTORS_VESTING_ADDR"
+	NT_LLC_ADDRESS             = "TODO_NT_LLC_ADDR"
+	MULTISIG_NT2_ADDRESS       = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
+	MULTISIG_GOVDAO_ADDRESS    = "g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf" // govdao t1
 )
 
 var ibcEscrowAddress = map[string]bool{}
@@ -162,8 +180,11 @@ func main() {
 	// Allocate contributions budget to GovDAO multisig
 	assign(totalDist, MULTISIG_GOVDAO_ADDRESS, TOTAL_AIRDROP_CONTRIBS)
 
-	// Allocate NT budget to NT main multisig
-	assign(totalDist, MULTISIG_NT1_ADDRESS, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
+	// Allocate Investors and NT,LLC to separate addresses (§123-124), with the
+	// §136 mainnet-unlocked tranche separated from the vesting remainder.
+	assign(totalDist, INVESTORS_UNLOCKED_ADDRESS, TOTAL_INVESTORS_UNLOCKED)
+	assign(totalDist, INVESTORS_VESTING_ADDRESS, TOTAL_INVESTORS_VESTING)
+	assign(totalDist, NT_LLC_ADDRESS, TOTAL_AIRDROP_NT_LLC)
 
 	// Allocate GovDAO founders budget (1000 GNOT each)
 	for _, addr := range govdaoFounders {
@@ -276,7 +297,9 @@ func validateHardcodedAddresses() {
 	}
 
 	check(MULTISIG_GOVDAO_ADDRESS, "MULTISIG_GOVDAO_ADDRESS")
-	check(MULTISIG_NT1_ADDRESS, "MULTISIG_NT1_ADDRESS")
+	check(INVESTORS_UNLOCKED_ADDRESS, "INVESTORS_UNLOCKED_ADDRESS")
+	check(INVESTORS_VESTING_ADDRESS, "INVESTORS_VESTING_ADDRESS")
+	check(NT_LLC_ADDRESS, "NT_LLC_ADDRESS")
 	check(MULTISIG_NT2_ADDRESS, "MULTISIG_NT2_ADDRESS")
 	for i, addr := range govdaoFounders {
 		check(addr, fmt.Sprintf("govdaoFounders[%d]", i))
