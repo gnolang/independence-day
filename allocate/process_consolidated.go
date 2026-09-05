@@ -505,8 +505,13 @@ func convertAddress(cosmosAddress string, prefix string) (string, error) {
 }
 
 func skip(address string) bool {
-	// skip excluded addresses
-	if excludedAddresses[address] {
+	// Skip excluded addresses.
+	//
+	// Matching is on the 20-byte payload, NOT the bech32 string. Every
+	// excluded.txt entry is written in cosmos1… form, and qualifyAtone() passes
+	// the atone1… encoding of the same keys — so a string comparison excluded
+	// them on the Cosmos side and silently let them through on the AtomOne side.
+	if key, err := addrKey(address); err == nil && excludedAddresses[key] {
 		return true
 	}
 
@@ -672,8 +677,11 @@ func loadExcludedAddresses() {
 		// Format: cosmos1xxxxxx # comment
 		parts := strings.Fields(line)
 		if len(parts) > 0 {
-			addr := parts[0]
-			excludedAddresses[addr] = true
+			key, err := addrKey(parts[0])
+			if err != nil {
+				panic(fmt.Errorf("%s: bad address %q: %w", excludedFile, parts[0], err))
+			}
+			excludedAddresses[key] = true
 		}
 	}
 }
