@@ -47,10 +47,28 @@ func TestFinalizedSupplyConstants(t *testing.T) {
 			TOTAL_AIRDROP_ATONE+
 			TOTAL_AIRDROP_NT+
 			TOTAL_AIRDROP_NT_LLC+
-			TOTAL_AIRDROP_CONTRIBS+
-			TOTAL_AIRDROP_GOVDAO_FOUNDERS+
-			TOTAL_PREMINE_NON_AIRDROP,
+			TOTAL_TREASURY_CORE+
+			TOTAL_TREASURY_ECOSYSTEM+
+			TOTAL_TREASURY_VALIDATOR,
 	)
+}
+
+// TestTreasurySplitPreservesTheAggregate is the property that makes the split a
+// re-shaping rather than a reallocation: the three treasury addresses plus what
+// is charged to them must still equal the 120,000,000 of §120-122.
+func TestTreasurySplitPreservesTheAggregate(t *testing.T) {
+	assert.Equal(t, 120000000,
+		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR)
+
+	// What actually reaches the three addresses, after the founders and the
+	// premine are charged out of them.
+	assert.Equal(t, 117648000,
+		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
+		"must equal the single GovDAO line it replaces")
+
+	// §333: the founders must not be paid from Ecosystem.
+	assert.Zero(t, TOTAL_TREASURY_ECOSYSTEM-TOTAL_TREASURY_ECOSYSTEM_NET-PREMINE_CHARGED_TO_ECOSYSTEM)
+	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, FOUNDERS_CHARGED_TO_CORE)
 }
 
 // TestPremineMatchesFile keeps TOTAL_PREMINE_NON_AIRDROP honest against the
@@ -162,7 +180,8 @@ func TestHardcodedAddressesAreValid(t *testing.T) {
 	assert.NotPanics(t, validateHardcodedAddresses)
 
 	for _, addr := range append([]string{
-		MULTISIG_GOVDAO_ADDRESS, MULTISIG_NT1_ADDRESS, MULTISIG_NT2_ADDRESS,
+		TREASURY_CORE_ADDRESS, TREASURY_ECOSYSTEM_ADDRESS, TREASURY_VALIDATOR_ADDRESS,
+		MULTISIG_NT1_ADDRESS, MULTISIG_NT2_ADDRESS,
 	}, govdaoFounders...) {
 		key, err := addrKey(addr)
 		require.NoError(t, err, "address %s", addr)

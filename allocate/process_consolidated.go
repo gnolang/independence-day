@@ -86,16 +86,59 @@ const TOTAL_PREMINE_NON_AIRDROP = 2345000
 const PREMINE_ABSORBED_FROM_CONTRIBS = TOTAL_PREMINE_NON_AIRDROP // option B
 
 const (
-	TOTAL_AIRDROP_ATOM            = 350000000
-	TOTAL_AIRDROP_ATONE           = 231000000
-	TOTAL_AIRDROP_CONTRIBS        = 119993000 - PREMINE_ABSORBED_FROM_CONTRIBS
-	TOTAL_AIRDROP_NT              = 300000000
-	TOTAL_AIRDROP_NT_LLC          = 332000000
+	TOTAL_AIRDROP_ATOM   = 350000000
+	TOTAL_AIRDROP_ATONE  = 231000000
+	TOTAL_AIRDROP_NT     = 300000000
+	TOTAL_AIRDROP_NT_LLC = 332000000
+
+	// The three treasuries of Constitution §120-122, each with its own address.
+	// They used to be one undifferentiated TOTAL_AIRDROP_CONTRIBS line.
+	//
+	//   §120  Core Treasury                 40,000,000
+	//   §121  Ecosystem Treasury            60,000,000
+	//   §122  Validator Services Treasury   20,000,000
+	//                                      ------------
+	//                                      120,000,000
+	//
+	// The premine and the founders allocation are paid OUT of these, so the
+	// amounts actually written to the three addresses are net of them. Which
+	// treasury absorbs which is a policy choice — see the two constants below.
+	TOTAL_TREASURY_CORE      = 40000000
+	TOTAL_TREASURY_ECOSYSTEM = 60000000
+	TOTAL_TREASURY_VALIDATOR = 20000000
+
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
 
-	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
-	MULTISIG_NT2_ADDRESS    = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
-	MULTISIG_GOVDAO_ADDRESS = "g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf" // govdao t1
+	// §333: "Present GovDAO members are not eligible for any allocation from the
+	// Ecosystem Treasury genesis allocation." All seven founders are GovDAO
+	// founders, so the founders allocation is charged to CORE. While the three
+	// treasuries shared one line this could not be shown either way; now it can.
+	FOUNDERS_CHARGED_TO_CORE = TOTAL_AIRDROP_GOVDAO_FOUNDERS
+
+	// §121 makes the Ecosystem Treasury "for prior and future Gno.land ecosystem
+	// development" and §140 makes GovDAO responsible for distributing it "to
+	// prior and future Gno.land ecosystem contributors" — so the 2022 contributor
+	// premine is charged to ECOSYSTEM.
+	//
+	// NOTE this includes 2,000,000 GNOT of faucet funding, which is chain
+	// operations rather than ecosystem development and arguably does not belong
+	// in this treasury at all under §226. Left here because moving it needs a
+	// decision about where the faucet IS funded from.
+	PREMINE_CHARGED_TO_ECOSYSTEM = TOTAL_PREMINE_NON_AIRDROP
+
+	// Net amounts written to the three treasury addresses.
+	TOTAL_TREASURY_CORE_NET      = TOTAL_TREASURY_CORE - FOUNDERS_CHARGED_TO_CORE
+	TOTAL_TREASURY_ECOSYSTEM_NET = TOTAL_TREASURY_ECOSYSTEM - PREMINE_CHARGED_TO_ECOSYSTEM
+	TOTAL_TREASURY_VALIDATOR_NET = TOTAL_TREASURY_VALIDATOR
+
+	MULTISIG_NT1_ADDRESS = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
+	MULTISIG_NT2_ADDRESS = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
+
+	// PLACEHOLDERS — these addresses do not exist yet. validateHardcodedAddresses()
+	// refuses to run until they are replaced, so this cannot ship by accident.
+	TREASURY_CORE_ADDRESS      = "TODO_CORE_TREASURY_ADDR"
+	TREASURY_ECOSYSTEM_ADDRESS = "TODO_ECOSYSTEM_TREASURY_ADDR"
+	TREASURY_VALIDATOR_ADDRESS = "TODO_VALIDATOR_TREASURY_ADDR"
 )
 
 var ibcEscrowAddress = map[string]bool{}
@@ -159,8 +202,10 @@ func main() {
 
 	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
 
-	// Allocate contributions budget to GovDAO multisig
-	assign(totalDist, MULTISIG_GOVDAO_ADDRESS, TOTAL_AIRDROP_CONTRIBS)
+	// Allocate each treasury to its own address (Constitution §120-122).
+	assign(totalDist, TREASURY_CORE_ADDRESS, TOTAL_TREASURY_CORE_NET)
+	assign(totalDist, TREASURY_ECOSYSTEM_ADDRESS, TOTAL_TREASURY_ECOSYSTEM_NET)
+	assign(totalDist, TREASURY_VALIDATOR_ADDRESS, TOTAL_TREASURY_VALIDATOR_NET)
 
 	// Allocate NT budget to NT main multisig
 	assign(totalDist, MULTISIG_NT1_ADDRESS, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
@@ -275,7 +320,9 @@ func validateHardcodedAddresses() {
 		seen[addr] = role
 	}
 
-	check(MULTISIG_GOVDAO_ADDRESS, "MULTISIG_GOVDAO_ADDRESS")
+	check(TREASURY_CORE_ADDRESS, "TREASURY_CORE_ADDRESS")
+	check(TREASURY_ECOSYSTEM_ADDRESS, "TREASURY_ECOSYSTEM_ADDRESS")
+	check(TREASURY_VALIDATOR_ADDRESS, "TREASURY_VALIDATOR_ADDRESS")
 	check(MULTISIG_NT1_ADDRESS, "MULTISIG_NT1_ADDRESS")
 	check(MULTISIG_NT2_ADDRESS, "MULTISIG_NT2_ADDRESS")
 	for i, addr := range govdaoFounders {
