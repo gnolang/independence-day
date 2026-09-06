@@ -6,7 +6,7 @@ paid. Read the enforcement column carefully — they are not all wired up the sa
 | File | What it is | Enforcement |
 |---|---|---|
 | `excluded.txt` | Addresses removed from the airdrop: 3 DokiaCapital, 3 Interchain Foundation, 4 Cosmos Hub module accounts, 1 AtomOne DAO placeholder. | **Partially enforced** — read by `allocate/process_consolidated.go` → `skip()`. See the caveat below. |
-| `ibc-escrow-addresses.txt` | The 426 IBC transfer escrow accounts, one per channel, as `cosmos1…:g1…:channel-N`. Derived, not curated. | **Loaded but not enforced** — the `return true` inside `skip()` is commented out. |
+| `ibc-escrow-addresses.txt` | The 426 IBC transfer escrow accounts, one per channel, as `cosmos1…:g1…:channel-N`. Derived, not curated. | **Enforced.** 106 of the 426 held a balance and are now skipped. |
 | `special-accounts.csv` | 78 rows annotating CEX, custodial, mining-pool, wallet, IBC and module addresses on Cosmos Hub. | **Readable but inert by default** — enforced only for the classes named in `excluded-types.txt`, which ships empty. Tracked in issue #12. |
 | `excluded-types.txt` | Exclusion by *class*, matched against the `type` column of `special-accounts.csv`. **Every line is commented out**, so nothing is excluded today. | active only when a line is uncommented |
 | `gen-ibc-escrow/` | One-shot generator for `ibc-escrow-addresses.txt`. | run by hand |

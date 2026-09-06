@@ -522,9 +522,17 @@ func skip(address string) bool {
 		}
 	}
 
-	// skip ibc escrow address
-	if ibcEscrowAddress[address] {
-		// return true
+	// Skip IBC transfer escrow accounts.
+	//
+	// These are derived, not curated: sha256("ics20-1" || 0x00 ||
+	// "transfer/channel-N")[:20]. There is no preimage anyone holds, so no
+	// private key exists for them on any chain. GNOT credited to one can never be
+	// moved by anybody — crediting them is a burn, not an allocation.
+	//
+	// Matched on the 20-byte payload: the file's first column is cosmos1…, and
+	// the same escrow accounts appear in the AtomOne snapshot under atone1….
+	if key, err := addrKey(address); err == nil && ibcEscrowAddress[key] {
+		return true
 	}
 
 	return false
@@ -657,7 +665,11 @@ func loadEscrowAddress() {
 		// cosmos1xxxxxx:g1xxxxxxxxxxxxxxxx:channel-1
 		addr := strings.Split(line, ":")[0]
 
-		ibcEscrowAddress[addr] = true
+		key, err := addrKey(addr)
+		if err != nil {
+			panic(fmt.Errorf("%s: bad address %q: %w", ibcEscrowFile, addr, err))
+		}
+		ibcEscrowAddress[key] = true
 	}
 }
 
