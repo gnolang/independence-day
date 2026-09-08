@@ -12,7 +12,7 @@ policy/ibc-escrow-addresses.txt     ─┤  (loaded; its skip is currently disab
         ▼  cd allocate && go run .   │
 allocate/genbalance.txt.gz        3,262,457 rows
         │
-        ├── mkgenesis/non-airdrop.txt      50 rows, 2,345,000 GNOT
+        ├── mkgenesis/non-airdrop.txt      64 rows, 2,359,000 GNOT
         ▼  cd mkgenesis && make            (concatenate, sum duplicates, sort desc)
 mkgenesis/balances.txt.gz         3,262,505 rows
         │
@@ -34,11 +34,15 @@ All in `allocate/process_consolidated.go` unless noted.
 |---|---|
 | ATOM bucket | `TOTAL_AIRDROP_ATOM` |
 | AtomOne bucket | `TOTAL_AIRDROP_ATONE` |
-| Contributions bucket | `TOTAL_AIRDROP_CONTRIBS` |
-| Investors | `TOTAL_AIRDROP_NT` |
+| Core / Ecosystem / Validator treasuries (§120-122) | `TOTAL_TREASURY_CORE`, `TOTAL_TREASURY_ECOSYSTEM`, `TOTAL_TREASURY_VALIDATOR` |
+| Who pays for the founders and the premine | `FOUNDERS_CHARGED_TO_CORE`, `PREMINE_CHARGED_TO_ECOSYSTEM` |
+| What actually reaches each treasury address | `TOTAL_TREASURY_*_NET` |
+| Investors, split by §136 | `TOTAL_INVESTORS_UNLOCKED`, `TOTAL_INVESTORS_VESTING`, `TOTAL_AIRDROP_NT` |
 | NT LLC | `TOTAL_AIRDROP_NT_LLC` |
 | Founders (total, split evenly) | `TOTAL_AIRDROP_GOVDAO_FOUNDERS` |
-| nt1 / nt2 / GovDAO T1 addresses | `MULTISIG_NT1_ADDRESS`, `MULTISIG_NT2_ADDRESS`, `MULTISIG_GOVDAO_ADDRESS` |
+| The three treasury addresses | `TREASURY_CORE_ADDRESS`, `TREASURY_ECOSYSTEM_ADDRESS`, `TREASURY_VALIDATOR_ADDRESS` |
+| The three ex-nt1 addresses | `INVESTORS_UNLOCKED_ADDRESS`, `INVESTORS_VESTING_ADDRESS`, `NT_LLC_ADDRESS` |
+| nt2 address | `MULTISIG_NT2_ADDRESS` |
 | Who the 7 founders are | `govdaoFounders` |
 | Which AiB addresses get swept into nt2 | `aibCosmosAddrs`, `aibAtoneAddrs` |
 | Prop-69 vote weighting | `weight()` |
@@ -58,23 +62,24 @@ file, so `git log -p allocate/process_consolidated.go` is a complete history of 
 
 ## The non-airdrop premine
 
-`mkgenesis/non-airdrop.txt` is the only hand-written balance source. It was last edited in **July 2022**
-and adds **2,345,000 GNOT** on top of whatever the buckets sum to:
+`mkgenesis/non-airdrop.txt` is the only hand-written balance source. Most of it dates from **July 2022**;
+it adds **2,359,000 GNOT** on top of whatever the buckets sum to:
 
 | Group | Rows | GNOT |
 |---|---:|---:|
 | `faucet0`, `faucet1` | 2 | 2,000,000 |
 | named contributors | 3 | 300,000 |
 | GitHub requesters | 45 | 45,000 |
-| **Total** | **50** | **2,345,000** |
+| multisig signer gas floats | 14 | 14,000 |
+| **Total** | **64** | **2,359,000** |
 
 Two things that matter:
 
 - The `test1` and `test2` rows (110,000 GNOT) were removed on 2026-09-03 — both were funded from
   mnemonics published in `gnolang/gno`'s own test fixtures. `faucet0` and `faucet1` carry the same
   2022 "(temporary)" marking and have **not** been resolved.
-- The premine is paid for out of the Contributions bucket, so the shipped file is the buckets plus
-  2,345,000 minus the truncation residual.
+- The premine is paid for out of the Ecosystem Treasury, so the shipped file is the buckets plus
+  2,359,000 minus the truncation residual.
 
 ---
 

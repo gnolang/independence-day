@@ -72,13 +72,6 @@ const TOTAL_SUPPLY = 1333000000
 // TestPremineMatchesFile asserts this constant against the actual file.
 const TOTAL_PREMINE_NON_AIRDROP = 2359000
 
-// FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS is the part of the 7,000 GNOT founders
-// budget that is never paid out, because the founder in question already carries
-// a snapshot entitlement (see govdaoFoundersSkipped). It is 1,000 GNOT per
-// skipped founder. Contributions absorbs it, exactly as it absorbs the premine,
-// so no GNOT is minted or lost and the cap arithmetic is unchanged.
-const FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS = 1000 // 1 skipped founder x 1,000
-
 // PREMINE_ABSORBED_FROM_CONTRIBS decides who pays for the premine above.
 // This is the ONE LINE to flip; everything else follows.
 //
@@ -94,24 +87,101 @@ const FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS = 1000 // 1 skipped founder x 1,000
 const PREMINE_ABSORBED_FROM_CONTRIBS = TOTAL_PREMINE_NON_AIRDROP // option B
 
 const (
-	TOTAL_AIRDROP_ATOM     = 350000000
-	TOTAL_AIRDROP_ATONE    = 231000000
-	TOTAL_AIRDROP_CONTRIBS = 119993000 +
-		FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS -
-		PREMINE_ABSORBED_FROM_CONTRIBS
-	TOTAL_AIRDROP_NT     = 300000000
-	TOTAL_AIRDROP_NT_LLC = 332000000
+	TOTAL_AIRDROP_ATOM  = 350000000
+	TOTAL_AIRDROP_ATONE = 231000000
 
-	// The seven-bucket breakdown budgets 7,000 GNOT for founders (7 x 1,000).
-	// One founder is skipped -- see govdaoFoundersSkipped -- so the bucket that
-	// is actually distributed is smaller, and the freed GNOT is absorbed by
-	// Contributions so the 1.333B cap stays exact.
-	// TestFoundersBudgetMatchesSkipList keeps these three constants consistent.
-	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000 - FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS
+	// Six eligible founders x 1,000 GNOT, not seven: Jae is skipped, see
+	// govdaoFoundersSkipped and moul/gno-meta#102. Because the founders
+	// allocation is charged to the Core Treasury and Core is a fixed 40,000,000,
+	// the 1,000 GNOT he does not receive simply stays in Core -- there is nothing
+	// to redistribute and no absorption constant is needed.
+	// TestFoundersBudgetMatchesSkipList keeps this in step with the skip list.
+	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 6000
 
-	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
-	MULTISIG_NT2_ADDRESS    = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
-	MULTISIG_GOVDAO_ADDRESS = "g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf" // govdao t1
+	// --- Constitution §120-122: three treasuries, three addresses -----------
+	//
+	// These used to be one undifferentiated TOTAL_AIRDROP_CONTRIBS line paid to
+	// one GovDAO T1 multisig:
+	//
+	//   §120  Core Treasury                 40,000,000
+	//   §121  Ecosystem Treasury            60,000,000
+	//   §122  Validator Services Treasury   20,000,000
+	//                                      ------------
+	//                                      120,000,000
+	//
+	// The premine and the founders allocation are paid OUT of these, so the
+	// amounts actually written to the three addresses are net of them. Which
+	// treasury absorbs which is a policy choice — see the two constants below.
+	TOTAL_TREASURY_CORE      = 40000000
+	TOTAL_TREASURY_ECOSYSTEM = 60000000
+	TOTAL_TREASURY_VALIDATOR = 20000000
+
+	// §333: "Present GovDAO members are not eligible for any allocation from the
+	// Ecosystem Treasury genesis allocation." All seven founders are GovDAO
+	// founders, so the founders allocation is charged to CORE. While the three
+	// treasuries shared one line this could not be shown either way; now it can.
+	FOUNDERS_CHARGED_TO_CORE = TOTAL_AIRDROP_GOVDAO_FOUNDERS
+
+	// §121 makes the Ecosystem Treasury "for prior and future Gno.land ecosystem
+	// development" and §140 makes GovDAO responsible for distributing it "to
+	// prior and future Gno.land ecosystem contributors" — so the 2022 contributor
+	// premine is charged to ECOSYSTEM. Tracking PREMINE_ABSORBED_FROM_CONTRIBS
+	// rather than TOTAL_PREMINE_NON_AIRDROP keeps the option A/B/C switch above
+	// working: under option A nothing is charged to any treasury.
+	//
+	// NOTE this includes 2,000,000 GNOT of faucet funding, which is chain
+	// operations rather than ecosystem development and arguably does not belong
+	// in this treasury at all under §226. Left here because moving it needs a
+	// decision about where the faucet IS funded from.
+	PREMINE_CHARGED_TO_ECOSYSTEM = PREMINE_ABSORBED_FROM_CONTRIBS
+
+	// Net amounts written to the three treasury addresses.
+	TOTAL_TREASURY_CORE_NET      = TOTAL_TREASURY_CORE - FOUNDERS_CHARGED_TO_CORE
+	TOTAL_TREASURY_ECOSYSTEM_NET = TOTAL_TREASURY_ECOSYSTEM - PREMINE_CHARGED_TO_ECOSYSTEM
+	TOTAL_TREASURY_VALIDATOR_NET = TOTAL_TREASURY_VALIDATOR
+
+	// --- Constitution §123-124 + §136-138: Investors and NT,LLC -------------
+	//
+	// §123 Investors 300,000,000 and §124 NT,LLC 332,000,000 are two buckets,
+	// not one; they used to be a single 632,000,000 line paid to nt1. §136 then
+	// carves the Investors bucket in two:
+	//
+	//   §136  "150,000,000 $GNOT from the Investors allocation will be unlocked
+	//          at the mainnet launch"
+	//
+	// One address carries one vesting schedule, so the unlocked tranche needs an
+	// address of its own. While all 632M sits on nt1 the exception is not merely
+	// unimplemented — it is UNEXPRESSIBLE.
+	TOTAL_INVESTORS_UNLOCKED = 150000000 // liquid at mainnet, §136
+	TOTAL_INVESTORS_VESTING  = 150000000 // §132 schedule
+	TOTAL_AIRDROP_NT         = TOTAL_INVESTORS_UNLOCKED + TOTAL_INVESTORS_VESTING
+	TOTAL_AIRDROP_NT_LLC     = 332000000
+
+	// The six real multisigs, from gnolang/multisigs config.toml. Each is the
+	// SAME signer set as the account it succeeds -- the three treasuries are the
+	// [govdao] members, the three ex-nt1 buckets are the [nt1] members -- with
+	// one provably-unspendable "salt" key added so that six purposes get six
+	// distinct addresses instead of collapsing onto two.
+	//
+	// A multisig address is the hash of its (threshold, members) tuple, so the
+	// same people at the same threshold always produce the same address. The salt
+	// key is a real secp256k1 point whose x coordinate is a small integer counted
+	// up from 1, so no private key for it can exist and it can never contribute a
+	// signature. Effective thresholds are therefore unchanged: 4-of-7 for the
+	// treasuries, 4-of-6 for the ex-nt1 buckets.
+	//
+	// Neither g1pxj9x5... (nt1) nor g1sze988... (GovDAO T1) is reused. Reuse was
+	// available for one successor each, but a reused address carries the old
+	// account's history and makes "which bucket is this?" unanswerable from the
+	// address alone -- which is the whole point of the split.
+	TREASURY_CORE_ADDRESS      = "g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9" // §120
+	TREASURY_ECOSYSTEM_ADDRESS = "g1ugke9x9ylrlex0lxcgw7eu0mdftvcrgglru0l0" // §121
+	TREASURY_VALIDATOR_ADDRESS = "g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p" // §122
+	INVESTORS_UNLOCKED_ADDRESS = "g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76" // §136, no vesting schedule
+	INVESTORS_VESTING_ADDRESS  = "g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3" // §132
+	NT_LLC_ADDRESS             = "g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p" // §124
+
+	MULTISIG_NT2_ADDRESS = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
 )
 
 var ibcEscrowAddress = map[string]bool{}
@@ -175,11 +245,16 @@ func main() {
 
 	totalDist := mergeDistributions(atomDistributed, atoneDistributed)
 
-	// Allocate contributions budget to GovDAO multisig
-	assign(totalDist, MULTISIG_GOVDAO_ADDRESS, TOTAL_AIRDROP_CONTRIBS)
+	// Allocate each treasury to its own address (Constitution §120-122).
+	assign(totalDist, TREASURY_CORE_ADDRESS, TOTAL_TREASURY_CORE_NET)
+	assign(totalDist, TREASURY_ECOSYSTEM_ADDRESS, TOTAL_TREASURY_ECOSYSTEM_NET)
+	assign(totalDist, TREASURY_VALIDATOR_ADDRESS, TOTAL_TREASURY_VALIDATOR_NET)
 
-	// Allocate NT budget to NT main multisig
-	assign(totalDist, MULTISIG_NT1_ADDRESS, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
+	// Allocate Investors and NT,LLC to separate addresses (§123-124), with the
+	// §136 mainnet-unlocked tranche separated from the vesting remainder.
+	assign(totalDist, INVESTORS_UNLOCKED_ADDRESS, TOTAL_INVESTORS_UNLOCKED)
+	assign(totalDist, INVESTORS_VESTING_ADDRESS, TOTAL_INVESTORS_VESTING)
+	assign(totalDist, NT_LLC_ADDRESS, TOTAL_AIRDROP_NT_LLC)
 
 	// Allocate GovDAO founders budget (1000 GNOT each), skipping the founders
 	// who already hold a snapshot entitlement. The divisor is the number of
@@ -262,7 +337,7 @@ var govdaoFounders = []string{
 // therefore 7,545,247.650036 GNOT, not 7,545,248.650036 and not 1,000.
 //
 // Every entry here must be an address that also appears in govdaoFounders, and
-// the count must match FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS. Both are asserted.
+// the count must be consistent with TOTAL_AIRDROP_GOVDAO_FOUNDERS. Both are asserted.
 var govdaoFoundersSkipped = map[string]string{
 	"g1ecsuj0q572jr0dhu29q9njtnmw03hyu7tyyvv6": "Jae - holds a Cosmos Hub snapshot entitlement (moul/gno-meta#102)",
 }
@@ -310,7 +385,7 @@ func assign(dist map[string]Distribution, addr string, gnot int) {
 // otherwise be discovered by whatever consumes the output — or, worse, not be
 // discovered, since nothing downstream asserts the address format.
 func validateHardcodedAddresses() {
-	seen := make(map[string]string, len(govdaoFounders)+3)
+	seen := make(map[string]string, len(govdaoFounders)+7)
 
 	check := func(addr, role string) {
 		if _, err := addrKey(addr); err != nil {
@@ -322,8 +397,12 @@ func validateHardcodedAddresses() {
 		seen[addr] = role
 	}
 
-	check(MULTISIG_GOVDAO_ADDRESS, "MULTISIG_GOVDAO_ADDRESS")
-	check(MULTISIG_NT1_ADDRESS, "MULTISIG_NT1_ADDRESS")
+	check(TREASURY_CORE_ADDRESS, "TREASURY_CORE_ADDRESS")
+	check(TREASURY_ECOSYSTEM_ADDRESS, "TREASURY_ECOSYSTEM_ADDRESS")
+	check(TREASURY_VALIDATOR_ADDRESS, "TREASURY_VALIDATOR_ADDRESS")
+	check(INVESTORS_UNLOCKED_ADDRESS, "INVESTORS_UNLOCKED_ADDRESS")
+	check(INVESTORS_VESTING_ADDRESS, "INVESTORS_VESTING_ADDRESS")
+	check(NT_LLC_ADDRESS, "NT_LLC_ADDRESS")
 	check(MULTISIG_NT2_ADDRESS, "MULTISIG_NT2_ADDRESS")
 	for i, addr := range govdaoFounders {
 		check(addr, fmt.Sprintf("govdaoFounders[%d]", i))

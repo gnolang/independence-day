@@ -2,7 +2,7 @@
 
 ## lines
 ```
-3262407 balances.txt
+3262411 balances.txt
 ```
 
 ## sum
@@ -17,10 +17,14 @@
 
 ## top 100 accounts
 ```
-g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf=632000000000000ugnot
-g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf=117635000000000ugnot
+g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p=332000000000000ugnot
+g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3=150000000000000ugnot
+g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76=150000000000000ugnot
 g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg=62126254516550ugnot
+g1ugke9x9ylrlex0lxcgw7eu0mdftvcrgglru0l0=57641000000000ugnot
+g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9=39994000000000ugnot
 g1p3ucd3ptpw902fluyjzhq3ffgq4ntddatev7s5=30397253787704ugnot
+g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p=20000000000000ugnot
 g1nm0rrq86ucezaf8uj35pq9fpwr5r82cl5vyaqs=19481846445127ugnot
 g1cj7u0wpe45j0udnsy306sna7peah054uj6h4rj=14140296127365ugnot
 g1zr7aswwzskhav7w57vwpaqsafuh5uj7nlmpxm3=9982784114056ugnot
@@ -113,9 +117,5 @@ g1qr37tv743eeagr97qzdy2p26m5gfh34uj56ffj=703405552793ugnot
 g1zq3f9tuy5klqvgg2clnd2504usluahastn5e9a=700491839335ugnot
 g1wzmsfgqhmcd8u53chmlywr0duypnawcguqta79=700491839335ugnot
 g1vljqp5zkx66cym5r5nqq5h56h93c5pgpcsc2cc=700491839335ugnot
-g1qqqx34depu9fhd83rels6u8pfpz0rfwfg80phl=700491839335ugnot
-g1ps4eeutqw9fr8tt8m2q7vsph2e8qqhnrkaw8sl=700491839335ugnot
-g1n742q32dr6k4uvalu95fsquraqn8qyary7he5f=700491839335ugnot
-g1jquc954anz6gus6077jmy83hewqded8k826w7m=700491839335ugnot
 ```
 
