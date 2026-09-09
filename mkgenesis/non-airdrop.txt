@@ -10,8 +10,7 @@
 # PREMINE_ABSORBED_FROM_CONTRIBS, so adding or removing a row here moves GNOT
 # between this file and GovDAO T1 rather than changing total supply.
 #
-# Current contents: 2,489,000 GNOT
-#   2,000,000  faucet0 + faucet1
+# Current contents: 489,000 GNOT
 #     300,000  3 named contributors
 #      45,000  45 GitHub requesters
 #      14,000  14 multisig signer keys (gas float)
@@ -34,13 +33,21 @@
 # funded from mnemonics published in gnolang/gno's own test fixtures, so anyone
 # could spend them. Marked "(temporary)" in 2022 and never cleaned up.
 #
-# STILL OPEN: faucet0 and faucet1 (1,000,000 GNOT each) were also marked
-# "(temporary)" in 2022. Whether the mainnet faucet is funded from here or from a
-# purpose-built multisig is a separate decision and has not been made.
-
-# Faucet accounts.
-g1f4v282mwyhu29afke4vq5r2xzcm6z3ftnugcnv=1000000000000ugnot # faucet0 (jae)
-g127jydsh6cms3lrtdenydxsckh23a8d6emqcvfa=1000000000000ugnot # faucet1 (moul)
+# REMOVED 2026-09-09: faucet0 and faucet1 (1,000,000 GNOT each). There is no
+# mainnet faucet, so there is nothing to fund. Both were marked "(temporary)" in
+# 2022 and had outlived the question of whether they should exist; the answer is
+# that they should not.
+#
+# They were also the largest single conformance problem in this file. The whole
+# premine is charged to the Ecosystem Treasury, which §322-328 reserves for
+# "rewarding the creators of External Contributions" and §346 restricts to
+# "contributors whose real human identity is known and recorded". A faucet is
+# neither a contributor nor a person, so 2,000,000 GNOT -- 80% of the premine --
+# sat in a treasury whose purpose clause could not accommodate it (§226). That is
+# resolved by not having it.
+#
+# The 2,000,000 returns to the Ecosystem Treasury, which goes 57,511,000 ->
+# 59,511,000. Total supply is unchanged.
 
 # Contributors premine (TODO).
 g15gdm49ktawvkrl88jadqpucng37yxutucuwaef=100000000000ugnot # @chadwick

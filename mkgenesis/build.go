@@ -90,28 +90,31 @@ func runBuild(args []string) error {
 	}
 	fmt.Printf("%s: %d rows, %d %s\n", *out, len(rows), total, denom)
 	fmt.Println(vest.describe())
-	warnDroppedSchedules(rows, vest)
+	reportDeclaredSchedules(rows)
 	return nil
 }
 
-// warnDroppedSchedules shouts when a row declared its own vesting schedule and
-// the build threw it away because vesting is off.
+// reportDeclaredSchedules lists the rows that carry a schedule from the input
+// data rather than from the §132 pass. These are honoured whether or not vesting
+// is on -- they exist because §132 cannot express them, and for the public-sale
+// forced-lockup row the restriction is a legal obligation, not a policy choice.
 //
-// Losing a schedule silently is the one failure mode this pipeline cannot
-// afford: the row still looks perfectly well-formed, `gnogenesis verify` still
-// passes, and the only symptom is that a transfer restriction someone is legally
-// on the hook for does not exist. With vesting off the restriction has to be
-// honoured by hand instead, so it has to be said out loud.
-func warnDroppedSchedules(rows []row, vest *vesting) {
-	if vest != nil {
-		return
-	}
+// This used to be warnDroppedSchedules, which fired when vesting was off to say
+// the schedule had been discarded. That was the wrong trade: the default build
+// is vesting-off, so the shipped sheet showed a forced-lockup allocation as
+// fully liquid and the only trace was a line in the build log. Now they survive,
+// and this prints them so the count is visible in CI output.
+func reportDeclaredSchedules(rows []row) {
+	n := 0
 	for _, r := range rows {
 		if r.schedule == "" {
 			continue
 		}
-		fmt.Printf("WARNING: %s declared %q and vesting is OFF, so the schedule was DROPPED — that restriction must now be enforced by hand\n",
-			r.addr, r.schedule)
+		n++
+		fmt.Printf("declared schedule (honoured regardless of -vesting-*): %s%s\n", r.addr, r.schedule)
+	}
+	if n > 0 {
+		fmt.Printf("declared schedules: %d\n", n)
 	}
 }
 

@@ -119,11 +119,21 @@ func TestVestingApplyPublicSale(t *testing.T) {
 		t.Errorf("declared: got %q, want %q", got, want)
 	}
 
-	// ... and it is dropped entirely when vesting is off, because the whole
-	// mechanism is opt-in. build.go warns loudly when this happens.
+	// ... and it SURVIVES vesting being off. This is the point: the default
+	// build is vesting-off, so dropping it here is what put a forced-lockup
+	// allocation into the shipped sheet as fully liquid, with only a line in the
+	// build log to say so. A declared schedule is not part of the opt-in §132
+	// mechanism -- it arrived with the input data because §132 cannot express
+	// it, and for this row it is a legal obligation.
 	var off *vesting
-	if got := off.apply(declared); got != declared.line {
-		t.Errorf("declared with vesting off: got %q, want %q", got, declared.line)
+	if got := off.apply(declared); got != want {
+		t.Errorf("declared with vesting off: got %q, want %q", got, want)
+	}
+
+	// The opt-in property still holds for everything that did NOT declare one.
+	plain := row{amount: 100, addr: "g1p", line: "g1p=100ugnot"}
+	if got := off.apply(plain); got != plain.line {
+		t.Errorf("undeclared row with vesting off must be untouched: got %q", got)
 	}
 }
 

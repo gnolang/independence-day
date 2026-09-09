@@ -41,14 +41,14 @@ the sheet itself before editing it.
 
 ## The non-airdrop premine
 
-`non-airdrop.txt` contributes **2,359,000 GNOT**:
+`non-airdrop.txt` contributes **489,000 GNOT**:
 
 | Group | GNOT |
 |---|---|
-| faucet0 + faucet1 | 2,000,000 |
 | 3 named contributors | 300,000 |
 | 45 GitHub requesters | 45,000 |
 | 14 multisig signer gas floats | 14,000 |
+| 13 `examples/` package authors | 130,000 |
 
 The `test1` and `test2` rows (110,000 GNOT) were removed on 2026-09-03: both were funded from mnemonics
 published in `gnolang/gno`'s own test fixtures, so anyone could spend them.

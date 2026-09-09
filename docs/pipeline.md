@@ -12,7 +12,7 @@ policy/ibc-escrow-addresses.txt     ─┤  (loaded; its skip is currently disab
         ▼  cd allocate && go run .   │
 allocate/genbalance.txt.gz        3,262,351 rows
         │
-        ├── mkgenesis/non-airdrop.txt      77 rows, 2,489,000 GNOT
+        ├── mkgenesis/non-airdrop.txt      75 rows,   489,000 GNOT
         ├── mkgenesis/publicsale.txt       68 rows, 21,604,687.430103 GNOT
         ▼  cd mkgenesis && make            (concatenate, sum duplicates, sort desc)
 mkgenesis/balances.txt.gz         3,262,457 rows
@@ -67,24 +67,24 @@ file, so `git log -p allocate/process_consolidated.go` is a complete history of 
 ## The non-airdrop premine
 
 `mkgenesis/non-airdrop.txt` is the older of the two hand-written balance sources. Most of it dates from
-**July 2022**; it adds **2,489,000 GNOT** on top of whatever the buckets sum to:
+**July 2022**; it adds **489,000 GNOT** on top of whatever the buckets sum to:
 
 | Group | Rows | GNOT |
 |---|---:|---:|
-| `faucet0`, `faucet1` | 2 | 2,000,000 |
 | named contributors | 3 | 300,000 |
 | GitHub requesters | 45 | 45,000 |
 | multisig signer gas floats | 14 | 14,000 |
 | `examples/` package authors | 13 | 130,000 |
-| **Total** | **77** | **2,489,000** |
+| **Total** | **75** | **489,000** |
 
 Two things that matter:
 
 - The `test1` and `test2` rows (110,000 GNOT) were removed on 2026-09-03 — both were funded from
-  mnemonics published in `gnolang/gno`'s own test fixtures. `faucet0` and `faucet1` carry the same
-  2022 "(temporary)" marking and have **not** been resolved.
+  mnemonics published in `gnolang/gno`'s own test fixtures. `faucet0` and `faucet1` (2,000,000 GNOT)
+  were removed on 2026-09-09: there is no mainnet faucet, and a faucet is not an Ecosystem Treasury
+  purpose under §322-328.
 - The premine is paid for out of the Ecosystem Treasury, so the shipped file is the buckets plus
-  2,489,000 minus the truncation residual.
+  489,000 minus the truncation residual.
 
 ---
 
