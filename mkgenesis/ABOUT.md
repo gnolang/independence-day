@@ -27,19 +27,21 @@ this sheet and in a genesis transaction on the consuming side is a live hazard.
 
 ## The non-airdrop premine
 
-`non-airdrop.txt` contributes **2,345,000 GNOT**:
+`non-airdrop.txt` contributes **2,359,000 GNOT**:
 
 | Group | GNOT |
 |---|---|
 | faucet0 + faucet1 | 2,000,000 |
 | 3 named contributors | 300,000 |
 | 45 GitHub requesters | 45,000 |
+| 14 multisig signer gas floats | 14,000 |
 
 The `test1` and `test2` rows (110,000 GNOT) were removed on 2026-09-03: both were funded from mnemonics
 published in `gnolang/gno`'s own test fixtures, so anyone could spend them.
 
-The premine is charged to the Contributions bucket (`PREMINE_ABSORBED_FROM_CONTRIBS`), and its total is
-asserted against this file by `TestPremineMatchesFile`.
+The premine is charged to the Ecosystem Treasury (`PREMINE_CHARGED_TO_ECOSYSTEM`, which tracks
+`PREMINE_ABSORBED_FROM_CONTRIBS`), and its total is asserted against this file by
+`TestPremineMatchesFile`.
 
 ## Running it
 
@@ -87,8 +89,8 @@ of the balance (`VESTING_UNLOCK_PCT` defaults to 4), `start` is the transferabil
 
 `VESTING_EXEMPT` exists for §136-138 — *"150,000,000 $GNOT from the Investors allocation will be
 unlocked at the mainnet launch"* — which is only expressible once that tranche has an address of its
-own. While Investors and NT,LLC share one address, one address would need two schedules and the
-exception cannot be written down at all.
+own. That address is now `INVESTORS_UNLOCKED_ADDRESS` in `allocate/process_consolidated.go`; put it in
+`VESTING_EXEMPT` and §136 is expressed end to end with no further code.
 
 Two properties worth knowing:
 

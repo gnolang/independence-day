@@ -42,15 +42,77 @@ func TestFinalizedSupplyConstants(t *testing.T) {
 	// is the buckets PLUS the non-airdrop premine. The previous version of this
 	// test summed only the buckets, which is why a 2,455,000 GNOT overshoot in
 	// the shipped file could pass CI.
+	//
+	// The premine and the founders are now charged INSIDE the three treasury
+	// buckets rather than added beside them, so they no longer appear as
+	// separate terms — see TestSplitPreservesTheAggregate.
 	assert.Equal(t, TOTAL_SUPPLY,
 		TOTAL_AIRDROP_ATOM+
 			TOTAL_AIRDROP_ATONE+
 			TOTAL_AIRDROP_NT+
 			TOTAL_AIRDROP_NT_LLC+
-			TOTAL_AIRDROP_CONTRIBS+
-			TOTAL_AIRDROP_GOVDAO_FOUNDERS+
-			TOTAL_PREMINE_NON_AIRDROP,
+			TOTAL_TREASURY_CORE+
+			TOTAL_TREASURY_ECOSYSTEM+
+			TOTAL_TREASURY_VALIDATOR,
 	)
+}
+
+// TestFoundersBudgetMatchesSkipList keeps the founders budget in step with the
+// skip list. Without it a future edit could drop a founder from the payout
+// without shrinking the budget, leaving a remainder that is silently dropped --
+// TestFinalizedSupplyConstants would still pass, because it only sums constants.
+func TestFoundersBudgetMatchesSkipList(t *testing.T) {
+	eligible := 0
+	for _, addr := range govdaoFounders {
+		if _, skipped := govdaoFoundersSkipped[addr]; !skipped {
+			eligible++
+		}
+	}
+	assert.Equal(t, len(govdaoFounders)-len(govdaoFoundersSkipped), eligible,
+		"every govdaoFoundersSkipped entry must also appear in govdaoFounders")
+
+	// Each eligible founder must still receive exactly 1,000 GNOT -- the divisor
+	// is the eligible count, so skipping someone must not move anyone else.
+	require.NotZero(t, eligible)
+	assert.Equal(t, 1000, TOTAL_AIRDROP_GOVDAO_FOUNDERS/eligible,
+		"the per-founder allocation must stay at 1,000 GNOT")
+	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, eligible*1000,
+		"the founders bucket must be exactly what is paid out, with no remainder")
+}
+
+// TestSplitPreservesTheAggregate is the property that makes this a re-shaping
+// rather than a reallocation: the six new addresses must carry exactly what the
+// two lines they replace carried.
+func TestSplitPreservesTheAggregate(t *testing.T) {
+	// §120-122: the three treasuries are the 120,000,000 they replace.
+	assert.Equal(t, 120000000,
+		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR)
+
+	// What actually reaches the three addresses, after the founders and the
+	// premine are charged out of them. 117,648,000 is the single GovDAO T1 line
+	// this replaces.
+	// 117,635,000, not the 117,648,000 this branch was written against: the
+	// GovDAO T1 line itself moved twice on main since then. Skipping Jae's
+	// founders allocation (moul/gno-meta#102) leaves 1,000 GNOT in the
+	// treasuries, and the 14 signer gas-float rows (moul/gno-meta#107) take
+	// 14,000 out of them.
+	assert.Equal(t, 117635000,
+		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
+		"must equal the single GovDAO line it replaces")
+	assert.Equal(t, 117635000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP,
+		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR,
+		"everything charged out of the treasuries must still be inside the 120M")
+
+	// §333: the founders must not be paid from Ecosystem.
+	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, FOUNDERS_CHARGED_TO_CORE)
+	assert.Zero(t, TOTAL_TREASURY_ECOSYSTEM-TOTAL_TREASURY_ECOSYSTEM_NET-PREMINE_CHARGED_TO_ECOSYSTEM)
+
+	// §123-124 / §136: Investors and NT,LLC are the 632,000,000 nt1 line, and
+	// the unlocked tranche is exactly the 150,000,000 the Constitution names.
+	assert.Equal(t, 632000000,
+		TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING+TOTAL_AIRDROP_NT_LLC)
+	assert.Equal(t, 300000000, TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING)
+	assert.Equal(t, 150000000, TOTAL_INVESTORS_UNLOCKED)
 }
 
 // TestPremineMatchesFile keeps TOTAL_PREMINE_NON_AIRDROP honest against the
@@ -162,16 +224,24 @@ func TestHardcodedAddressesAreValid(t *testing.T) {
 	assert.NotPanics(t, validateHardcodedAddresses)
 
 	for _, addr := range append([]string{
-		MULTISIG_GOVDAO_ADDRESS, MULTISIG_NT1_ADDRESS, MULTISIG_NT2_ADDRESS,
+		TREASURY_CORE_ADDRESS, TREASURY_ECOSYSTEM_ADDRESS, TREASURY_VALIDATOR_ADDRESS,
+		INVESTORS_UNLOCKED_ADDRESS, INVESTORS_VESTING_ADDRESS, NT_LLC_ADDRESS,
+		MULTISIG_NT2_ADDRESS,
 	}, govdaoFounders...) {
 		key, err := addrKey(addr)
 		require.NoError(t, err, "address %s", addr)
 		assert.Equal(t, addr, key, "address %s is not in canonical g1 form", addr)
 	}
 
-	assert.Len(t, govdaoFounders, 7, "TOTAL_AIRDROP_GOVDAO_FOUNDERS is divided by len(govdaoFounders)")
-	assert.Zero(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS%len(govdaoFounders),
-		"founders budget must divide evenly, otherwise the remainder is silently dropped")
+	assert.Len(t, govdaoFounders, 7, "the founders list is the seven GovDAO T1 members")
+
+	// The budget is divided by the ELIGIBLE founders, not by len(govdaoFounders):
+	// moul/gno-meta#102 skips one. Divisibility is still what matters -- a
+	// remainder would be silently dropped and take the genesis below the cap.
+	eligible := len(govdaoFounders) - len(govdaoFoundersSkipped)
+	require.NotZero(t, eligible)
+	assert.Zero(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS%eligible,
+		"founders budget must divide evenly across eligible founders, otherwise the remainder is silently dropped")
 }
 
 // TestExcludedTypesDefaultsToNoOp is the property that makes this mechanism safe

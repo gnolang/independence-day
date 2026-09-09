@@ -10,14 +10,24 @@
 # PREMINE_ABSORBED_FROM_CONTRIBS, so adding or removing a row here moves GNOT
 # between this file and GovDAO T1 rather than changing total supply.
 #
-# Current contents: 2,345,000 GNOT
+# Current contents: 2,359,000 GNOT
 #   2,000,000  faucet0 + faucet1
 #     300,000  3 named contributors
 #      45,000  45 GitHub requesters
+#      14,000  14 multisig signer keys (gas float)
 #
 # The finalized allocation is the seven-bucket 1,333,000,000 GNOT breakdown in the
 # root README. The buckets themselves are defined in
 # allocate/process_consolidated.go and nowhere else — do not restate them here.
+#
+# CHANGED 2026-09-08: @moul's row was repointed from the 2022-era key
+# g1u7y667z64x2h7vc6fmpcprgey4ck233jaww9zq to g1manfred47kzduec920z88wfr64ylksmdcedlf5,
+# which is the key actually in use (moul/gno-meta#108). The old key is a 2022
+# artifact -- it signs r/users.Register("", "manfred", ...) in
+# archive/gnotest-2022/genesis_txs.txt, which is frozen history and must NOT be
+# rewritten. g1manfred... also carries the 1,000 GNOT govdaoFounders row;
+# mkgenesis/build.go's accumulate() sums duplicates, so the two merge into a
+# single 101,000 GNOT row with no supply change.
 #
 # REMOVED 2026-09-03: test1 (10,000 GNOT) and test2 (100,000 GNOT). Both were
 # funded from mnemonics published in gnolang/gno's own test fixtures, so anyone
@@ -33,7 +43,7 @@ g127jydsh6cms3lrtdenydxsckh23a8d6emqcvfa=1000000000000ugnot # faucet1 (moul)
 
 # Contributors premine (TODO).
 g15gdm49ktawvkrl88jadqpucng37yxutucuwaef=100000000000ugnot # @chadwick
-g1u7y667z64x2h7vc6fmpcprgey4ck233jaww9zq=100000000000ugnot # @moul
+g1manfred47kzduec920z88wfr64ylksmdcedlf5=100000000000ugnot # @moul
 g14da4n9hcynyzz83q607uu8keuh9hwlv42ra6fa=100000000000ugnot # @piux2
 # NOTE: a commented-out row here once assigned @difranco the SAME address as
 # test2 (g1us8428u2a5satrlxzagqqa5m6vmuze025anjlj) — a published mnemonic reused
@@ -85,3 +95,40 @@ g1hygx8ga9qakhkczyrzs9drm8j8tu4qds9y5e3r=1000000000ugnot # @zoynitskiy #94
 g1f977l6wxdh3qu60kzl75vx2wmzswu68l03r8su=1000000000ugnot # @catShaark #92
 g1644qje5rx6jsdqfkzmgnfcegx4dxkjh6rwqd69=1000000000ugnot # @MadafakAvril14th #91
 g1mzjajymvmtksdwh3wkrndwj6zls2awl9q83dh6=1000000000ugnot # @Vanlee #89
+
+# Multisig signer keys -- gas float.
+#
+# Derived from gnolang/multisigs accounts.csv with the same code path that writes
+# multisig-keys/*.addr; the derivation reproduces the three committed multisig
+# addresses byte-for-byte, so it is checkable rather than asserted.
+#
+# 1,000 GNOT each, matching the smallest existing tier above. This is a float so
+# a signer can act individually on-chain (namespace registration, gnokey), NOT an
+# allocation: signing a multisig transaction needs no balance, because the
+# multisig account pays the fee.
+#
+# jaekwon is deliberately ABSENT. His rotated key (gnolang/multisigs#37) derives
+# to g1ecsuj0q572jr0dhu29q9njtnmw03hyu7tyyvv6, which already holds
+# 7,545,247.650036 GNOT from the Cosmos Hub snapshot. accumulate() SUMS
+# duplicates, so a row here would silently make it 7,545,248.650036 -- which is
+# precisely the outcome moul/gno-meta#102 decided against when it chose to skip
+# his founders allocation. Adding him back here would quietly reverse that.
+#
+# The three AiB signers (clockworkgr, julienrbrt, tbruyelle), added to
+# accounts.csv by gnolang/multisigs#36 after this list was drawn up, are also
+# absent: they are AllInBits staff rather than gno core signers, and this money
+# comes out of the GovDAO Contributions bucket. That is a separate decision.
+g1cgnrpdemae7r2qvtkd99x3vk6cvmppsavx8eqs=1000000000ugnot # aeddi (govdao)
+g14c3dc3elsk9czd0gdgfmwvy5d7zvpz38djdl63=1000000000ugnot # ajnavarro (faucet, planned)
+g18gqzh8js3q4cl43z83pw73mtmnaw8yykwe7lr5=1000000000ugnot # alexis (nt1, nt2)
+g1qynsu9dwj9lq0m5fkje7jh6qy3md80ztqnshhm=1000000000ugnot # berty
+g1gzhj234kpajz963z5vf42j4ylddscnkez2wvly=1000000000ugnot # dongwon (govdao, nt1, nt2)
+g14fp30dq2vgyymxgewg358g3p5u3h29aewuaeja=1000000000ugnot # gfanton (faucet, planned)
+g12y822ervrzlghe06v5g888nranl5z5f56985ya=1000000000ugnot # howl (govdao, nt1, nt2)
+g160luhd7ptjnusjdvfdxnqryzrs7vhwjwlgy9sh=1000000000ugnot # jeronimoalbi
+g1xnv893735y5ef0we0e8w3empa55lnvkfcmn3qs=1000000000ugnot # maxwell (govdao, nt1, nt2)
+g10rsn5amklf2gmzy5eej2f6upg5eju47zvzv4rr=1000000000ugnot # milos (govdao)
+g1m7nvpk9trgj5sqhwdu2r0p9v5e2pzemedglvzt=1000000000ugnot # moul (govdao, nt1, nt2, faucet)
+g1fgcyn4zypusy8eql5ea85udjvhhxtj6vt3fwkr=1000000000ugnot # ray (removed by multisigs#32)
+g15tt5rh54pwrp8ehvf9n6f6ut4m5l98r68mywjm=1000000000ugnot # sw360cab (faucet, planned)
+g187sfsghc9tqayr5rgdmpy2tetnq9ttluxuk79h=1000000000ugnot # zooma

@@ -38,21 +38,32 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 |---|---:|---|
 | ATOM airdrop | 350,000,000 | Cosmos Hub ATOM holders, snapshot block 10562840 (2022-05-20 08:00 PDT) |
 | AtomOne airdrop | 231,000,000 | AtomOne ATONE/PHOTON holders, snapshot block 6439117 |
-| Investors + NT LLC | 632,000,000 | `g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf` (nt1 multisig) |
-| Contributions | 117,648,000 | `g1sze988ga0a7sj5583cu3xt6m4vkxru4uwh6dmf` (GovDAO T1 multisig) |
-| GovDAO founders | 7,000 | 1,000 each to 7 addresses |
-| Non-airdrop premine | 2,345,000 | `mkgenesis/non-airdrop.txt` — charged to the Contributions bucket |
+| Investors — unlocked at launch (§136) | 150,000,000 | `g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76` — no vesting schedule |
+| Investors — vesting (§132) | 150,000,000 | `g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3` |
+| NT,LLC (§124) | 332,000,000 | `g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p` |
+| Core Treasury (§120) | 39,994,000 | `g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9`; 40,000,000 less the founders |
+| Ecosystem Treasury (§121) | 57,641,000 | `g1ugke9x9ylrlex0lxcgw7eu0mdftvcrgglru0l0`; 60,000,000 less the premine |
+| Validator Services Treasury (§122) | 20,000,000 | `g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p` |
+| GovDAO founders | 6,000 | 1,000 each to 6 of the 7 — Jae is skipped, he holds a snapshot entitlement. Charged to the Core Treasury (§333) |
+| Non-airdrop premine | 2,359,000 | `mkgenesis/non-airdrop.txt` — charged to the Ecosystem Treasury |
 | **Total** | **1,333,000,000** | |
+
+> **The six addresses are real multisigs**, from `gnolang/multisigs`. Each is the same signer set as the
+> account it succeeds — the three treasuries are the `[govdao]` members, the three ex-nt1 buckets are the
+> `[nt1]` members — plus one provably-unspendable salt key, so that six purposes get six distinct
+> addresses rather than collapsing onto two. Effective thresholds are unchanged (4-of-7 and 4-of-6): a
+> salt key is a real curve point with no private key, so it can never contribute a signature.
 
 Two things are *not* separate buckets and surprise people:
 
 - **nt2 (`g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg`)** is a **sweep, not an allocation**. The AiB
   addresses listed in `aibCosmosAddrs` / `aibAtoneAddrs` are removed from the airdrop and their combined
   entitlement is re-added under nt2. That GNOT comes *out of* the 350M + 231M, not on top.
-- **[`mkgenesis/non-airdrop.txt`](mkgenesis/non-airdrop.txt)** adds 2,345,000 GNOT of pre-airdrop premine
-  (faucets, early contributors, GitHub requesters) at the very last step. It is dated 2022, and it is
-  paid for by deducting the same amount from the Contributions bucket — which is why that row reads
-  117,648,000 rather than 119,993,000. Controlled by
+- **[`mkgenesis/non-airdrop.txt`](mkgenesis/non-airdrop.txt)** adds 2,359,000 GNOT of pre-airdrop premine
+  (faucets, early contributors, GitHub requesters, and a 1,000 GNOT gas float for each multisig signer
+  key) at the very last step. Most of it is dated 2022, and it is
+  paid for by deducting the same amount from the Ecosystem Treasury — which is why that row reads
+  57,641,000 rather than 60,000,000. Controlled by
   `PREMINE_ABSORBED_FROM_CONTRIBS` in [`allocate/process_consolidated.go`](allocate/process_consolidated.go).
   See [`docs/pipeline.md`](docs/pipeline.md#the-non-airdrop-premine).
 
