@@ -83,10 +83,16 @@ runtime — a transfer while locked is refused, verified by running gno's own
 
 Two things to know before relying on it:
 
-1. **It is only emitted when vesting is on** (`make VESTING_START=… VESTING_END=…`). The committed
-   `balances.txt.gz` is built with vesting off, so the schedule is absent from it and the restriction
-   has to be honoured by hand. `mkgenesis build` prints a warning whenever it drops the schedule this
-   way — do not ignore that line.
+1. **It is always emitted, including when the §132 pass is off.** This changed on 2026-09-09: the
+   schedule used to be dropped from every committed build, because `vesting.apply()` tested for
+   "vesting off" before it tested for "this row declared its own schedule". The committed
+   `balances.txt.gz` therefore showed this address fully liquid at genesis, with only a build-log
+   warning to say so. A declared schedule is not part of the opt-in §132 mechanism — it exists
+   precisely because §132 cannot express it — so it is now honoured unconditionally.
+
+   **Consequence for `unrestricted_addrs`:** this row now carries a vesting line in the shipped
+   sheet, so caveat 2 below is live rather than theoretical. Whitelisting this address on a binary
+   that predates `331e17fc3` will panic at `InitChain`.
 2. **The genesis binary must contain gno commit `331e17fc3`** (gnolang/gno#6095, 2026-08-28), which is
    on `master` only. `chain/pearl` and `chain/sapphire` carry the grammar but an older design where
    the account is not a `*GnoAccount`; there, a vesting address that also appears in
