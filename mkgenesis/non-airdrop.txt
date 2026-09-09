@@ -10,11 +10,12 @@
 # PREMINE_ABSORBED_FROM_CONTRIBS, so adding or removing a row here moves GNOT
 # between this file and GovDAO T1 rather than changing total supply.
 #
-# Current contents: 2,359,000 GNOT
+# Current contents: 2,489,000 GNOT
 #   2,000,000  faucet0 + faucet1
 #     300,000  3 named contributors
 #      45,000  45 GitHub requesters
 #      14,000  14 multisig signer keys (gas float)
+#     130,000  13 examples/ package authors (contributor airdrop)
 #
 # The finalized allocation is the seven-bucket 1,333,000,000 GNOT breakdown in the
 # root README. The buckets themselves are defined in
@@ -132,3 +133,61 @@ g1m7nvpk9trgj5sqhwdu2r0p9v5e2pzemedglvzt=1000000000ugnot # moul (govdao, nt1, nt
 g1fgcyn4zypusy8eql5ea85udjvhhxtj6vt3fwkr=1000000000ugnot # ray (removed by multisigs#32)
 g15tt5rh54pwrp8ehvf9n6f6ut4m5l98r68mywjm=1000000000ugnot # sw360cab (faucet, planned)
 g187sfsghc9tqayr5rgdmpy2tetnq9ttluxuk79h=1000000000ugnot # zooma
+
+# Contributor airdrop -- examples/ package authors.
+#
+# 10,000 GNOT each to every person who has uploaded a contract into
+# gnolang/gno/examples/, so they can publish more packages early.
+#
+# SNAPSHOT: gnolang/gno @ 0828bf0b3ab0830e1a11cf9977aab9d2cb8243a8 (2026-09-09).
+# Frozen before the rule was announced, deliberately: "10k as soon as you upload
+# a contract" with no cutoff is an open faucet -- any merged PR adding a package
+# would mint 10,000 GNOT. Everything here is computed at that SHA.
+#
+# WHO QUALIFIES: authorship is taken from git history, not from gnomod.toml.
+# The [addpkg] creator field records who DEPLOYS a package at genesis, not who
+# wrote it: of 325 gnomod.toml files only 72 declare a creator, resolving to 7
+# addresses, 4 of which are org/deployer keys (sys, gnoland, nt, gov/dao). Seven
+# of the ten personal namespaces declare nothing at all.
+#
+# So: for each package directory live at the snapshot, the author of the earliest
+# commit introducing its first non-test .gno file, following renames. Excludes
+# examples/quarantined/** (182 of those dirs come from one 2026-06-01 mass-move).
+# Because this is git authorship, org keys drop out by construction -- every row
+# below is a person. Result: 168 live packages, 27 unique authors.
+#
+# ADDRESSES: preferring the address a contributor already uses to hold value
+# (gnomod.toml creator / existing premine row), falling back to the signer key in
+# gnolang/multisigs accounts.csv. The multisigs-derived addresses are identical to
+# the 14 gas-float rows above (moul/gno-meta#107) and to MULTISIGS.gen.md, so they
+# are cross-checked against two independent files rather than asserted.
+#
+# THIS IS ADDITIVE. accumulate() sums duplicates, so a contributor who also holds
+# a snapshot entitlement, a founders row or a gas float keeps all of them and
+# gains 10,000. That is the intent.
+#
+# jaekwon: his key already holds 7,545,247.650036 GNOT from the Cosmos Hub
+# snapshot, which is why #107 left him out of the gas floats and why
+# moul/gno-meta#102 skipped his founders allocation. The additive rule above puts
+# him back in. Flagged in gnolang/multisigs#43 -- this is one line to drop.
+#
+# WaDadidou: g1kfd9f5... is the samcrew TEAM deployer key, not a personal
+# address. Also flagged in gnolang/multisigs#43.
+#
+# INCOMPLETE: 14 of the 27 authors have no key in any registry and are NOT below
+# -- 36 packages, 140,000 GNOT still owed, largest gap @deelawn at 10 packages.
+# gnolang/multisigs#43 is collecting them. Adding them later is 14 more rows here
+# plus the matching bump to TOTAL_PREMINE_NON_AIRDROP.
+g1manfred47kzduec920z88wfr64ylksmdcedlf5=10000000000ugnot # @moul (55 pkgs)
+g1ecsuj0q572jr0dhu29q9njtnmw03hyu7tyyvv6=10000000000ugnot # @jaekwon (32 pkgs) -- see note above
+g160luhd7ptjnusjdvfdxnqryzrs7vhwjwlgy9sh=10000000000ugnot # @jeronimoalbi (14 pkgs)
+g125em6arxsnj49vx35f0n0z34putv5ty3376fg5=10000000000ugnot # @leohhhn (8 pkgs)
+g1xnv893735y5ef0we0e8w3empa55lnvkfcmn3qs=10000000000ugnot # @ltzmaxwell (4 pkgs)
+g1cgnrpdemae7r2qvtkd99x3vk6cvmppsavx8eqs=10000000000ugnot # @aeddi (4 pkgs)
+g10rsn5amklf2gmzy5eej2f6upg5eju47zvzv4rr=10000000000ugnot # @zivkovicmilos (3 pkgs)
+g1kfd9f5zlvcvy6aammcmqswa7cyjpu2nyt9qfen=10000000000ugnot # @WaDadidou (3 pkgs) -- samcrew team key
+g14c3dc3elsk9czd0gdgfmwvy5d7zvpz38djdl63=10000000000ugnot # @ajnavarro (3 pkgs)
+g12y822ervrzlghe06v5g888nranl5z5f56985ya=10000000000ugnot # @thehowl (2 pkgs)
+g14fp30dq2vgyymxgewg358g3p5u3h29aewuaeja=10000000000ugnot # @gfanton (2 pkgs)
+g18efrne8qfz6lwge9zq25h8gdpjuhsx978r8qyv=10000000000ugnot # @tbruyelle (1 pkg)
+g18gqzh8js3q4cl43z83pw73mtmnaw8yykwe7lr5=10000000000ugnot # @alexis-colin (1 pkg)

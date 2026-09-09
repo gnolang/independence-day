@@ -129,7 +129,18 @@ func parseBalanceFile(filename string, parseLine parserFunc) (*balanceFile, erro
 			return nil, fmt.Errorf("unable to parse line %d: %w", lineNum, err)
 		}
 
-		balances[balance.Address] = balance.Amount
+		// Accumulate, do not assign: an address may legitimately appear on
+		// several rows of the same file. mkgenesis/build.go's accumulate() sums
+		// them, so the cross-check has to sum them too -- assigning here made
+		// this tool silently report only the LAST row for such an address,
+		// understating the balance it is supposed to be independently checking.
+		// No address had two rows in non-airdrop.txt until the contributor
+		// airdrop gave nine signers both a gas float and an airdrop row.
+		if existing, ok := balances[balance.Address]; ok {
+			balances[balance.Address] = existing.Add(balance.Amount)
+		} else {
+			balances[balance.Address] = balance.Amount
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

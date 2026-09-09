@@ -68,9 +68,13 @@ const TOTAL_SUPPLY = 1333000000
 // Was 2455000 until the test1 and test2 rows were removed on 2026-09-03 — both
 // were funded from mnemonics published in gnolang/gno's test fixtures. Was
 // 2345000 until 14 multisig signer gas-float rows were added (moul/gno-meta#107).
+// Was 2359000 until 13 examples/ package authors were added at 10,000 GNOT each
+// (+130000, the contributor airdrop; gnolang/multisigs#43). That set is
+// INCOMPLETE: 14 more qualifying authors have no key in any registry yet, so
+// expect a further +140000 once multisigs#43 collects them.
 //
 // TestPremineMatchesFile asserts this constant against the actual file.
-const TOTAL_PREMINE_NON_AIRDROP = 2359000
+const TOTAL_PREMINE_NON_AIRDROP = 2489000
 
 // PREMINE_ABSORBED_FROM_CONTRIBS decides who pays for the premine above.
 // This is the ONE LINE to flip; everything else follows.
