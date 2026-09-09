@@ -54,6 +54,20 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 > addresses rather than collapsing onto two. Effective thresholds are unchanged (4-of-7 and 4-of-6): a
 > salt key is a real curve point with no private key, so it can never contribute a signature.
 
+### Unrestricted addresses (§126)
+
+At genesis `$GNOT` is globally non-transferable, and §126 requires an exemption list.
+[`mkgenesis/unrestricted.txt`](mkgenesis/unrestricted.txt) is it — **71 addresses**, generated: the
+three funds §127 names (Ecosystem, and both Investors tranches) plus every row of `publicsale.txt`.
+It is derived rather than hand-written so a participant who binds an address cannot end up in the
+genesis but off the exemption list.
+
+**Whitelisting is not unlocking.** §129 — *"Whitelisted funds remain subject to the vesting schedule
+below"* — so the investors-vesting tranche is on the list *and* keeps its §132 schedule.
+
+NT,LLC, the Core and Validator Services treasuries and nt2 are deliberately **absent**; each needs a
+ruling rather than a default. See the header of the file.
+
 Three things are *not* separate buckets and surprise people:
 
 - **The public token sale** is a **carve-out of the §136 unlocked tranche**, not an eighth bucket. The
@@ -151,18 +165,20 @@ confirming it against the shipped `balances.txt.gz`.
 
 ## Stable paths — do not move these
 
-External tooling fetches raw URLs into this repository. **These two paths are a public contract:**
+External tooling fetches raw URLs into this repository. **These paths are a public contract:**
 
 | Path | Fetched by |
 |---|---|
-| `mkgenesis/balances.txt.gz` | `gnolang/gno` → `misc/deployments/gnoland1/gen-genesis.sh`, `misc/deployments/test13.gno.land/gen-genesis.sh` (pinned by commit sha), and `misc/deployments/test{2,3}.gno.land/Makefile` (unpinned, `raw/main/...`) |
+| `mkgenesis/balances.txt.gz` | `gnolang/gno` → `misc/deployments/gnoland1/gen-genesis.sh`, `misc/deployments/test13.gno.land/gen-genesis.sh`, `misc/deployments/mainnet.gno.land/gen-genesis.sh` (pinned by commit sha), and `misc/deployments/test{2,3}.gno.land/Makefile` (unpinned, `raw/main/...`) |
+| `mkgenesis/unrestricted.txt` | `gnolang/gno` → `misc/deployments/mainnet.gno.land/gen-genesis.sh` (pinned by commit sha + sha256) — the §126 exemption list |
 | `mkgenesis/non-airdrop.txt` | same pipeline, indirectly |
 
 `mkgenesis/` therefore keeps its historical name even though the rest of the tree was renamed for
 clarity. Anything that moves `mkgenesis/balances.txt.gz` breaks every unpinned consumer silently — the
 download just 404s. If it ever has to move, land the redirect first.
 
-`mkgenesis/README.md` is **generated** by `cd mkgenesis && go run . readme`. Do not hand-edit it.
+`mkgenesis/README.md` and `mkgenesis/unrestricted.txt` are **generated** (`go run . readme` /
+`go run . unrestricted`). Do not hand-edit them.
 
 ## Credits
 
