@@ -71,6 +71,13 @@ const TOTAL_SUPPLY = 1333000000
 // TestPremineMatchesFile asserts this constant against the actual file.
 const TOTAL_PREMINE_NON_AIRDROP = 2345000
 
+// FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS is the part of the 7,000 GNOT founders
+// budget that is never paid out, because the founder in question already carries
+// a snapshot entitlement (see govdaoFoundersSkipped). It is 1,000 GNOT per
+// skipped founder. Contributions absorbs it, exactly as it absorbs the premine,
+// so no GNOT is minted or lost and the cap arithmetic is unchanged.
+const FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS = 1000 // 1 skipped founder x 1,000
+
 // PREMINE_ABSORBED_FROM_CONTRIBS decides who pays for the premine above.
 // This is the ONE LINE to flip; everything else follows.
 //
@@ -86,12 +93,20 @@ const TOTAL_PREMINE_NON_AIRDROP = 2345000
 const PREMINE_ABSORBED_FROM_CONTRIBS = TOTAL_PREMINE_NON_AIRDROP // option B
 
 const (
-	TOTAL_AIRDROP_ATOM            = 350000000
-	TOTAL_AIRDROP_ATONE           = 231000000
-	TOTAL_AIRDROP_CONTRIBS        = 119993000 - PREMINE_ABSORBED_FROM_CONTRIBS
-	TOTAL_AIRDROP_NT              = 300000000
-	TOTAL_AIRDROP_NT_LLC          = 332000000
-	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000
+	TOTAL_AIRDROP_ATOM     = 350000000
+	TOTAL_AIRDROP_ATONE    = 231000000
+	TOTAL_AIRDROP_CONTRIBS = 119993000 +
+		FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS -
+		PREMINE_ABSORBED_FROM_CONTRIBS
+	TOTAL_AIRDROP_NT     = 300000000
+	TOTAL_AIRDROP_NT_LLC = 332000000
+
+	// The seven-bucket breakdown budgets 7,000 GNOT for founders (7 x 1,000).
+	// One founder is skipped -- see govdaoFoundersSkipped -- so the bucket that
+	// is actually distributed is smaller, and the freed GNOT is absorbed by
+	// Contributions so the 1.333B cap stays exact.
+	// TestFoundersBudgetMatchesSkipList keeps these three constants consistent.
+	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 7000 - FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS
 
 	MULTISIG_NT1_ADDRESS    = "g1pxj9x5jkklzam9v76q7sn7grm0xnuj69qu7lmf" //nt1: nt llc + investors
 	MULTISIG_NT2_ADDRESS    = "g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg" //nt2: special case handling for aib accounts
@@ -165,9 +180,22 @@ func main() {
 	// Allocate NT budget to NT main multisig
 	assign(totalDist, MULTISIG_NT1_ADDRESS, TOTAL_AIRDROP_NT+TOTAL_AIRDROP_NT_LLC)
 
-	// Allocate GovDAO founders budget (1000 GNOT each)
+	// Allocate GovDAO founders budget (1000 GNOT each), skipping the founders
+	// who already hold a snapshot entitlement. The divisor is the number of
+	// ELIGIBLE founders, not len(govdaoFounders) -- otherwise skipping one would
+	// silently change everybody else's amount.
+	eligibleFounders := 0
 	for _, addr := range govdaoFounders {
-		assign(totalDist, addr, TOTAL_AIRDROP_GOVDAO_FOUNDERS/len(govdaoFounders))
+		if _, skipped := govdaoFoundersSkipped[addr]; !skipped {
+			eligibleFounders++
+		}
+	}
+	for _, addr := range govdaoFounders {
+		if reason, skipped := govdaoFoundersSkipped[addr]; skipped {
+			fmt.Printf("skipping govdao founders allocation for %s: %s\n", addr, reason)
+			continue
+		}
+		assign(totalDist, addr, TOTAL_AIRDROP_GOVDAO_FOUNDERS/eligibleFounders)
 	}
 
 	// Create gzipped file
@@ -218,6 +246,24 @@ var govdaoFounders = []string{
 	"g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq", // Maxwell
 	"g1e6gxg5tvc55mwsn7t7dymmlasratv7mkv0rap2", // Milos
 	"g1mx4pum9976th863jgry4sdjzfwu03qan5w2v9j", // Ray
+}
+
+// govdaoFoundersSkipped lists founders who do NOT receive the fixed 1,000 GNOT
+// founders allocation, because they already hold a snapshot entitlement that
+// assign() rightly refuses to overwrite.
+//
+// gnolang/independence-day#62 repointed Jae's entry onto
+// g1ecsuj0q572jr0dhu29q9njtnmw03hyu7tyyvv6, which is a top-10 Cosmos Hub
+// recipient holding 7,545,247.650036 GNOT. The old address held nothing, which
+// is why this never fired before. assign() panicked and asked for a decision;
+// the decision is recorded in moul/gno-meta#102: the snapshot entitlement
+// stands, and the founders allocation is skipped for him. His genesis balance is
+// therefore 7,545,247.650036 GNOT, not 7,545,248.650036 and not 1,000.
+//
+// Every entry here must be an address that also appears in govdaoFounders, and
+// the count must match FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS. Both are asserted.
+var govdaoFoundersSkipped = map[string]string{
+	"g1ecsuj0q572jr0dhu29q9njtnmw03hyu7tyyvv6": "Jae - holds a Cosmos Hub snapshot entitlement (moul/gno-meta#102)",
 }
 
 var aibAtoneAddrs = []string{

@@ -53,6 +53,33 @@ func TestFinalizedSupplyConstants(t *testing.T) {
 	)
 }
 
+// TestFoundersBudgetMatchesSkipList locks the three constants that moved when
+// moul/gno-meta#102 was decided to each other and to the skip list. Without this
+// a future edit could drop a founder from the payout without moving the freed
+// GNOT into Contributions, which would silently take the genesis below the cap --
+// TestFinalizedSupplyConstants would still pass, because it only sums constants.
+func TestFoundersBudgetMatchesSkipList(t *testing.T) {
+	assert.Equal(t, len(govdaoFoundersSkipped)*1000, FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS,
+		"FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS must be 1,000 GNOT per skipped founder")
+
+	eligible := 0
+	for _, addr := range govdaoFounders {
+		if _, skipped := govdaoFoundersSkipped[addr]; !skipped {
+			eligible++
+		}
+	}
+	assert.Equal(t, len(govdaoFounders)-len(govdaoFoundersSkipped), eligible,
+		"every govdaoFoundersSkipped entry must also appear in govdaoFounders")
+
+	// Each eligible founder must still receive exactly 1,000 GNOT -- the divisor
+	// is the eligible count, so skipping someone must not move anyone else.
+	require.NotZero(t, eligible)
+	assert.Equal(t, 1000, TOTAL_AIRDROP_GOVDAO_FOUNDERS/eligible,
+		"the per-founder allocation must stay at 1,000 GNOT")
+	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, eligible*1000,
+		"the founders bucket must be exactly what is paid out, with no remainder")
+}
+
 // TestPremineMatchesFile keeps TOTAL_PREMINE_NON_AIRDROP honest against the
 // actual contents of mkgenesis/non-airdrop.txt.
 func TestPremineMatchesFile(t *testing.T) {
@@ -169,9 +196,15 @@ func TestHardcodedAddressesAreValid(t *testing.T) {
 		assert.Equal(t, addr, key, "address %s is not in canonical g1 form", addr)
 	}
 
-	assert.Len(t, govdaoFounders, 7, "TOTAL_AIRDROP_GOVDAO_FOUNDERS is divided by len(govdaoFounders)")
-	assert.Zero(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS%len(govdaoFounders),
-		"founders budget must divide evenly, otherwise the remainder is silently dropped")
+	assert.Len(t, govdaoFounders, 7, "the founders list is the seven GovDAO T1 members")
+
+	// The budget is divided by the ELIGIBLE founders, not by len(govdaoFounders):
+	// moul/gno-meta#102 skips one. Divisibility is still what matters -- a
+	// remainder would be silently dropped and take the genesis below the cap.
+	eligible := len(govdaoFounders) - len(govdaoFoundersSkipped)
+	require.NotZero(t, eligible)
+	assert.Zero(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS%eligible,
+		"founders budget must divide evenly across eligible founders, otherwise the remainder is silently dropped")
 }
 
 // TestExcludedTypesDefaultsToNoOp is the property that makes this mechanism safe
