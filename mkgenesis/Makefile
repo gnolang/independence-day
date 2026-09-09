@@ -29,7 +29,7 @@ all: balances.txt.gz README.md
 
 re: clean all
 
-balances.txt: non-airdrop.txt ../allocate/genbalance.txt.gz
+balances.txt: non-airdrop.txt publicsale.txt ../allocate/genbalance.txt.gz
 	$(GO) run . build $(VESTING_FLAGS)
 
 balances.txt.gz: balances.txt

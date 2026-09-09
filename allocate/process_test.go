@@ -115,6 +115,152 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 		TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING+TOTAL_AIRDROP_NT_LLC)
 	assert.Equal(t, 300000000, TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING)
 	assert.Equal(t, 150000000, TOTAL_INVESTORS_UNLOCKED)
+
+	// The public sale is carved OUT of the §136 tranche, not added beside it:
+	// what INVESTORS_UNLOCKED_ADDRESS receives plus what the 68 sale rows
+	// receive is still exactly 150,000,000 GNOT.
+	assert.Equal(t, int64(TOTAL_INVESTORS_UNLOCKED)*1000000,
+		int64(TOTAL_INVESTORS_UNLOCKED_UGNOT)+int64(TOTAL_PUBLIC_SALE_UGNOT),
+		"the sale must come out of the unlocked tranche, not on top of it")
+	assert.Positive(t, TOTAL_INVESTORS_UNLOCKED_UGNOT,
+		"the sale cannot be larger than the tranche it is carved from")
+}
+
+// TestPublicSaleMatchesFile keeps TOTAL_PUBLIC_SALE_UGNOT honest against the
+// actual contents of mkgenesis/publicsale.txt, the same way
+// TestPremineMatchesFile does for the premine. Without it, editing the sheet
+// without editing the constant would move GNOT into or out of existence with
+// nothing failing.
+func TestPublicSaleMatchesFile(t *testing.T) {
+	rows := readSaleSheet(t)
+
+	var sum int64
+	for _, amount := range rows {
+		sum += amount
+	}
+
+	assert.Equal(t, int64(TOTAL_PUBLIC_SALE_UGNOT), sum,
+		"TOTAL_PUBLIC_SALE_UGNOT is out of date with %s", publicSaleFile)
+	assert.Len(t, rows, 68,
+		"67 participants who named an address, plus the [sale-unclaimed] multisig row")
+
+	// The multisig row is what the 55 unbound participants are owed. Losing it
+	// does not fail anything — those tokens are simply never minted and the
+	// supply comes up short — so it is asserted by address here.
+	const saleUnclaimed = "g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0"
+	assert.Equal(t, int64(9338399590158), rows[saleUnclaimed],
+		"the [sale-unclaimed] holding row must be present and unchanged")
+}
+
+// TestPublicSaleRowsAreWellFormed asserts the two things gnogenesis does NOT
+// catch, on the sheet rather than after the merge: every address must be a
+// distinct, canonical 20-byte g1 address, and none may collide with an address
+// this program allocates to directly.
+func TestPublicSaleRowsAreWellFormed(t *testing.T) {
+	rows := readSaleSheet(t)
+
+	fixed := map[string]string{
+		TREASURY_CORE_ADDRESS:      "TREASURY_CORE_ADDRESS",
+		TREASURY_ECOSYSTEM_ADDRESS: "TREASURY_ECOSYSTEM_ADDRESS",
+		TREASURY_VALIDATOR_ADDRESS: "TREASURY_VALIDATOR_ADDRESS",
+		INVESTORS_UNLOCKED_ADDRESS: "INVESTORS_UNLOCKED_ADDRESS",
+		INVESTORS_VESTING_ADDRESS:  "INVESTORS_VESTING_ADDRESS",
+		NT_LLC_ADDRESS:             "NT_LLC_ADDRESS",
+		MULTISIG_NT2_ADDRESS:       "MULTISIG_NT2_ADDRESS",
+	}
+	for i, addr := range govdaoFounders {
+		fixed[addr] = fmt.Sprintf("govdaoFounders[%d]", i)
+	}
+
+	for addr, amount := range rows {
+		key, err := addrKey(addr)
+		require.NoError(t, err, "sale address %s", addr)
+		assert.Equal(t, addr, key, "sale address %s is not in canonical g1 form", addr)
+		assert.Positive(t, amount, "sale address %s has a non-positive amount", addr)
+		assert.NotContains(t, fixed, addr,
+			"sale address %s is also %s — a fixed allocation would be summed with it silently", addr, fixed[addr])
+	}
+}
+
+// TestPublicSaleOverlapIsSummed pins the 25 addresses that hold BOTH a sale
+// entitlement and an airdrop one.
+//
+// This is expected and the sum is the intended treatment — the airdrop is for
+// holding ATOM/ATONE at the 2022/2024 snapshots, the sale entitlement is for
+// paying USD in 2026, and neither is conditioned on the other. It is pinned
+// because it is invisible: mkgenesis merges the two without comment, so the set
+// growing or shrinking would otherwise be noticed by nobody.
+func TestPublicSaleOverlapIsSummed(t *testing.T) {
+	sale := readSaleSheet(t)
+
+	f, err := os.Open(outputFile)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+	zr, err := gzip.NewReader(f)
+	require.NoError(t, err)
+	t.Cleanup(func() { zr.Close() })
+
+	var (
+		overlap  int
+		airdrop  int64
+		saleSide int64
+	)
+	sc := bufio.NewScanner(zr)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		_, rest, ok := strings.Cut(sc.Text(), ":")
+		require.True(t, ok)
+		addr, amount, ok := strings.Cut(rest, "=")
+		require.True(t, ok)
+		saleAmount, both := sale[addr]
+		if !both {
+			continue
+		}
+		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
+		require.NoError(t, err)
+		overlap++
+		airdrop += v
+		saleSide += saleAmount
+	}
+	require.NoError(t, sc.Err())
+
+	assert.Equal(t, 25, overlap,
+		"the number of sale participants who also hold an airdrop entitlement changed")
+	assert.Equal(t, int64(315720117148), airdrop,
+		"the airdrop held by those 25 changed")
+	t.Logf("%d addresses hold both: %d ugnot of airdrop + %d ugnot of sale", overlap, airdrop, saleSide)
+}
+
+// readSaleSheet parses mkgenesis/publicsale.txt the way mkgenesis does: '#'
+// starts a comment, and a ";vesting=…" suffix is drawn from the balance rather
+// than added to it.
+func readSaleSheet(t *testing.T) map[string]int64 {
+	t.Helper()
+
+	f, err := os.Open(publicSaleFile)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	rows := make(map[string]int64)
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(strings.Split(sc.Text(), "#")[0])
+		if line == "" {
+			continue
+		}
+		addr, amount, ok := strings.Cut(line, "=")
+		require.True(t, ok, "malformed sale line: %q", line)
+		amount, _, _ = strings.Cut(amount, ";")
+		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
+		require.NoError(t, err, "malformed sale line: %q", line)
+
+		_, dup := rows[addr]
+		require.False(t, dup, "duplicate sale address %s", addr)
+		rows[addr] = v
+	}
+	require.NoError(t, sc.Err())
+
+	return rows
 }
 
 // TestPremineMatchesFile keeps TOTAL_PREMINE_NON_AIRDROP honest against the
@@ -493,11 +639,12 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	// genbalance.txt.gz carries the buckets only; the premine is added later by
-	// mkgenesis. Derived from the constants so that flipping
-	// PREMINE_ABSORBED_FROM_CONTRIBS does not silently break this test.
-	// The exact total of the SHIPPED file is asserted by TestGenesisFileTotal.
-	expected := types.NewDec(int64(TOTAL_SUPPLY-TOTAL_PREMINE_NON_AIRDROP) * 1000000)
+	// genbalance.txt.gz carries the buckets only; the premine and the public
+	// sale are both added later by mkgenesis, out of their own sheets. Derived
+	// from the constants so that flipping PREMINE_ABSORBED_FROM_CONTRIBS does
+	// not silently break this test. The exact total of the SHIPPED file is
+	// asserted by TestGenesisFileTotal.
+	expected := types.NewDec(int64(TOTAL_SUPPLY-TOTAL_PREMINE_NON_AIRDROP)*1000000 - TOTAL_PUBLIC_SALE_UGNOT)
 	delta := expected.Mul(types.NewDecWithPrec(1, 4)) // 0.01%
 	diff := sum.Sub(expected).Abs()
 

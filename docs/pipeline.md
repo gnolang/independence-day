@@ -10,11 +10,12 @@ policy/excluded.txt                 ─┤
 policy/ibc-escrow-addresses.txt     ─┤  (loaded; its skip is currently disabled)
         │                            │
         ▼  cd allocate && go run .   │
-allocate/genbalance.txt.gz        3,262,457 rows
+allocate/genbalance.txt.gz        3,262,351 rows
         │
-        ├── mkgenesis/non-airdrop.txt      64 rows, 2,359,000 GNOT
+        ├── mkgenesis/non-airdrop.txt      77 rows, 2,489,000 GNOT
+        ├── mkgenesis/publicsale.txt       68 rows, 21,604,687.430103 GNOT
         ▼  cd mkgenesis && make            (concatenate, sum duplicates, sort desc)
-mkgenesis/balances.txt.gz         3,262,505 rows
+mkgenesis/balances.txt.gz         3,262,457 rows
         │
         ▼  fetched by raw URL
 gnolang/gno  misc/deployments/gnoland1/gen-genesis.sh
@@ -52,8 +53,11 @@ All in `allocate/process_consolidated.go` unless noted.
 | Truncation | `whole()` |
 | PHOTON→ATONE ratio | `PHOTON_TO_ATONE_RATIO`, `allocate/atone.go` |
 | Input/output file paths | the `const` block at the top of `process_consolidated.go` |
+| Investors, less the public sale | `TOTAL_PUBLIC_SALE_UGNOT`, `TOTAL_INVESTORS_UNLOCKED_UGNOT` |
 | The premine | `mkgenesis/non-airdrop.txt` |
+| The public sale rows | `mkgenesis/publicsale.txt` |
 | Duplicate summing | `accumulate()` in `mkgenesis/build.go` |
+| What the §132 schedule is computed over | `entry.unlocked`, `vesting.apply()` in `mkgenesis/` |
 
 There is deliberately no config file. Every number that affects an allocation is a Go constant in one
 file, so `git log -p allocate/process_consolidated.go` is a complete history of the economics.
@@ -62,8 +66,8 @@ file, so `git log -p allocate/process_consolidated.go` is a complete history of 
 
 ## The non-airdrop premine
 
-`mkgenesis/non-airdrop.txt` is the only hand-written balance source. Most of it dates from **July 2022**;
-it adds **2,359,000 GNOT** on top of whatever the buckets sum to:
+`mkgenesis/non-airdrop.txt` is the older of the two hand-written balance sources. Most of it dates from
+**July 2022**; it adds **2,489,000 GNOT** on top of whatever the buckets sum to:
 
 | Group | Rows | GNOT |
 |---|---:|---:|
@@ -71,7 +75,8 @@ it adds **2,359,000 GNOT** on top of whatever the buckets sum to:
 | named contributors | 3 | 300,000 |
 | GitHub requesters | 45 | 45,000 |
 | multisig signer gas floats | 14 | 14,000 |
-| **Total** | **64** | **2,359,000** |
+| `examples/` package authors | 13 | 130,000 |
+| **Total** | **77** | **2,489,000** |
 
 Two things that matter:
 
@@ -79,7 +84,40 @@ Two things that matter:
   mnemonics published in `gnolang/gno`'s own test fixtures. `faucet0` and `faucet1` carry the same
   2022 "(temporary)" marking and have **not** been resolved.
 - The premine is paid for out of the Ecosystem Treasury, so the shipped file is the buckets plus
-  2,359,000 minus the truncation residual.
+  2,489,000 minus the truncation residual.
+
+---
+
+## The public token sale
+
+`mkgenesis/publicsale.txt` is the second hand-written balance source, and unlike the premine it is
+**supply-neutral by construction**: `TOTAL_PUBLIC_SALE_UGNOT` is subtracted from the §136 unlocked
+tranche before it is written, so every ugnot in the sheet is one that
+`INVESTORS_UNLOCKED_ADDRESS` does not receive. Adding or removing a row moves GNOT between the two,
+never into or out of existence — `TestPublicSaleMatchesFile` is what keeps the constant and the file
+from drifting apart.
+
+| Group | Rows | GNOT |
+|---|---:|---:|
+| participants who named a gno.land address | 67 | 12,266,287.839945 |
+| `[sale-unclaimed]` 2-of-4 multisig, for the 55 who had not | 1 | 9,338,399.590158 |
+| **Total** | **68** | **21,604,687.430103** |
+
+Three things that matter:
+
+- **25 of the 67 also hold an airdrop entitlement** at the same address, 315,720.117148 GNOT between
+  them, and `accumulate()` sums the two. That is the intended treatment — the airdrop is for holding
+  ATOM/ATONE at the 2022/2024 snapshots, the sale entitlement is for paying USD in 2026 — but it is
+  invisible in the output, so `TestPublicSaleOverlapIsSummed` pins the set.
+- **Sale allocations do not vest**, and those 25 rows are why that cannot be expressed as an exempt
+  list: exempting the address would let its airdrop ride free too. `entry.unlocked` records how much
+  of a row is liquid at genesis and the §132 schedule is computed over the remainder, which is right
+  on both halves.
+- **One row declares its own schedule** (a US accredited investor under a 12-month cliff) and one
+  address carries at most one schedule — so for that row the declared cliff replaces §132 rather than
+  stacking with it, and its airdrop portion ends up unscheduled. It is 1,995.215082 GNOT and the
+  alternative is to express nothing at all. See
+  [`../inputs/README-publicsale-provenance.md`](../inputs/README-publicsale-provenance.md).
 
 ---
 

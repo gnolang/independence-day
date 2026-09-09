@@ -3,14 +3,20 @@
 **Immutable.** Nothing in here is edited after capture. If a snapshot is wrong it is replaced wholesale
 with a new one at a new height, and the change is called out in [`../docs/history.md`](../docs/history.md).
 
+That applies to the public-sale settlement too. It is a snapshot of a list that is still growing —
+participants keep binding gno.land addresses after it was taken — so if genesis slips, replace the
+file at a new instant rather than adding rows to this one.
+
 | File | What it is | Consumed by |
 |---|---|---|
 | `cosmoshub-10562840.json.gz` | Cosmos Hub consolidated snapshot at block **10562840** (2022-05-20 08:00 PDT), 27 MB. Per address: liquid `uatom`, delegated `duatom` (shares already converted back to ATOM using each validator's token/share ratio, so slashing is accounted for), and that address's last vote on prop 69. | `allocate/process_consolidated.go` |
 | `atomone-6439117.json.gz` | AtomOne consolidated snapshot at block **6439117**. Per address: `uatone`, `duatone`, `uphoton`. | `allocate/atone.go` |
 | `cosmoshub-validators.json` | Cosmos Hub validator token/share ratios at snapshot height. | **not read by this repo** — see below |
 | `cosmoshub-prop69-last-votes.json.gz` | Every vote submitted while prop 69 was active, from a quicksync.io `cosmos-hub-4` archive node. | **not read by this repo** — see below |
+| `publicsale-sonar-2026-09-09.csv` | The Sonar public token sale, settled on Ethereum mainnet. All **122** wallets, marked `GENESIS` (named a gno.land address by the snapshot) or `UNCLAIMED` (had not). **Reference only — this is not the file that is loaded**; the 67 + 1 rows that are live in `mkgenesis/publicsale.txt`. | humans, and `allocate/process_test.go` |
 | `how-to-rebuild-cosmoshub.md` | How to sync a gaiad full node and export state at 10562840. | humans |
 | `README-snapshot-provenance.md` | The exact `gnobounty7` / `govbox` command lines that produced the two consolidated snapshots, plus notes on how delegations and zero-balance accounts were handled. | humans |
+| `README-publicsale-provenance.md` | How each sale amount was derived, which wallets are in genesis and why the rest are not, the one 12-month-lockup row and its evidence, and what is and is not verified. | humans |
 
 ## Why two of these are committed but unread
 

@@ -59,12 +59,12 @@ g1bbb=200ugnot # an inline comment
 # g1ccc=300ugnot
 `)
 
-	totals := map[string]int64{}
+	totals := map[string]entry{}
 	if err := readPremine(path, totals); err != nil {
 		t.Fatalf("readPremine: %v", err)
 	}
 
-	want := map[string]int64{"g1aaa": 100, "g1bbb": 200}
+	want := map[string]entry{"g1aaa": {amount: 100}, "g1bbb": {amount: 200}}
 	if !reflect.DeepEqual(totals, want) {
 		t.Fatalf("got %v, want %v", totals, want)
 	}
@@ -75,21 +75,21 @@ func TestAccumulateSumsDuplicateAddresses(t *testing.T) {
 
 	premine := writeTemp(t, "non-airdrop.txt", "g1shared=100ugnot\ng1only=1ugnot\n")
 
-	totals := map[string]int64{}
+	totals := map[string]entry{}
 	if err := readPremine(premine, totals); err != nil {
 		t.Fatalf("readPremine: %v", err)
 	}
 	// The same address arriving from the airdrop must be added, not replaced —
 	// unlike LeftMerge on the consuming side, which is last-write-wins.
-	if err := accumulate(strings.NewReader("src:g1shared=25ugnot\n"), "genbalance", totals, secondColonField); err != nil {
+	if err := accumulate(strings.NewReader("src:g1shared=25ugnot\n"), "genbalance", totals, secondColonField, false); err != nil {
 		t.Fatalf("accumulate: %v", err)
 	}
 
-	if totals["g1shared"] != 125 {
-		t.Fatalf("g1shared = %d, want 125 (100 premine + 25 airdrop)", totals["g1shared"])
+	if totals["g1shared"].amount != 125 {
+		t.Fatalf("g1shared = %d, want 125 (100 premine + 25 airdrop)", totals["g1shared"].amount)
 	}
-	if totals["g1only"] != 1 {
-		t.Fatalf("g1only = %d, want 1", totals["g1only"])
+	if totals["g1only"].amount != 1 {
+		t.Fatalf("g1only = %d, want 1", totals["g1only"].amount)
 	}
 }
 
@@ -99,13 +99,13 @@ func TestAccumulateSumsDuplicateAddresses(t *testing.T) {
 func TestSortRowsTieBreak(t *testing.T) {
 	t.Parallel()
 
-	rows := sortRows(map[string]int64{
-		"g1jquc9": 669761901607,
-		"g1n742q": 669761901607,
-		"g1ps4ee": 669761901607,
-		"g1qqqx3": 669761901607,
-		"g1big":   632000000000000,
-		"g1dust":  1,
+	rows := sortRows(map[string]entry{
+		"g1jquc9": {amount: 669761901607},
+		"g1n742q": {amount: 669761901607},
+		"g1ps4ee": {amount: 669761901607},
+		"g1qqqx3": {amount: 669761901607},
+		"g1big":   {amount: 632000000000000},
+		"g1dust":  {amount: 1},
 	})
 
 	var got []string

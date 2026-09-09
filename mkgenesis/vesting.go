@@ -72,17 +72,43 @@ func newVesting(start, end, unlockPct int64, exempt string) (*vesting, error) {
 // apply returns the row's line with a vesting schedule appended, or the line
 // unchanged when the address is exempt or nothing would vest.
 //
+// Three cases, in order:
+//
+//  1. Vesting is off. NOTHING gets a schedule, not even a row that declared one
+//     — the whole mechanism is opt-in, and the output stays byte-identical to a
+//     build from before it existed. build.go warns about every schedule dropped
+//     this way, because with it dropped the restriction has to be honoured by
+//     hand.
+//  2. The row declared its own schedule. It is emitted verbatim and the common
+//     schedule does not also apply: one address carries at most one schedule,
+//     and a declared one exists precisely because §132 cannot express it.
+//  3. Otherwise the common §132 schedule, computed over the balance MINUS the
+//     part that is liquid at genesis (r.unlocked — see entry in build.go). For
+//     an ordinary row unlocked is 0 and this is the plain 96%; for a public-sale
+//     participant who also holds an airdrop it vests the airdrop half only.
+//
 // The arithmetic is int64 throughout. The awk version this replaced accumulated
 // in float64 and had to refuse to run once amount*pct reached 2^53; that guard
 // is no longer needed. The largest conceivable balance is the 1.333e15 ugnot
 // total supply, and even that times 100 is still two orders of magnitude below
 // int64's range.
 func (v *vesting) apply(r row) string {
-	if v == nil || v.exempt[r.addr] {
+	if v == nil {
+		return r.line
+	}
+	if r.schedule != "" {
+		return r.line + r.schedule
+	}
+	if v.exempt[r.addr] {
 		return r.line
 	}
 
-	vested := r.amount - r.amount*v.unlockPct/100
+	subject := r.amount - r.unlocked
+	if subject <= 0 {
+		return r.line
+	}
+
+	vested := subject - subject*v.unlockPct/100
 	if vested <= 0 {
 		return r.line
 	}

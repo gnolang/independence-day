@@ -80,6 +80,72 @@ func TestVestingApply(t *testing.T) {
 	}
 }
 
+// TestVestingApplyPublicSale covers the two things the public sale added to
+// apply(): a genesis-liquid portion that the common schedule must not cover,
+// and a row that brings its own schedule.
+func TestVestingApplyPublicSale(t *testing.T) {
+	t.Parallel()
+
+	v, err := newVesting(1780000000, 1843072000, 4, "")
+	if err != nil {
+		t.Fatalf("newVesting: %v", err)
+	}
+
+	// A pure sale row: everything is liquid, so nothing vests and no suffix is
+	// written — the same outcome as an exemption, without needing one.
+	pure := row{amount: 1000, unlocked: 1000, addr: "g1sale", line: "g1sale=1000ugnot"}
+	if got := v.apply(pure); got != pure.line {
+		t.Errorf("pure sale: got %q, want %q", got, pure.line)
+	}
+
+	// The case an exempt-list cannot express: a sale participant who ALSO holds
+	// an airdrop. 1000 total, 400 of it bought in the sale, so the schedule is
+	// computed over the 600 airdrop only -> 96% of 600 = 576.
+	both := row{amount: 1000, unlocked: 400, addr: "g1both", line: "g1both=1000ugnot"}
+	if got, want := v.apply(both), "g1both=1000ugnot;vesting=576ugnot,1780000000,1843072000"; got != want {
+		t.Errorf("sale+airdrop: got %q, want %q", got, want)
+	}
+
+	// A declared schedule is emitted verbatim and suppresses the common one.
+	declared := row{
+		amount:   1841860465,
+		unlocked: 1841860465,
+		schedule: ";vesting=1841860465ugnot,0,1820534400;type=delayed",
+		addr:     "g1us",
+		line:     "g1us=1841860465ugnot",
+	}
+	want := "g1us=1841860465ugnot;vesting=1841860465ugnot,0,1820534400;type=delayed"
+	if got := v.apply(declared); got != want {
+		t.Errorf("declared: got %q, want %q", got, want)
+	}
+
+	// ... and it is dropped entirely when vesting is off, because the whole
+	// mechanism is opt-in. build.go warns loudly when this happens.
+	var off *vesting
+	if got := off.apply(declared); got != declared.line {
+		t.Errorf("declared with vesting off: got %q, want %q", got, declared.line)
+	}
+}
+
+// TestAccumulateRejectsTwoSchedules locks in that a second declared schedule for
+// the same address is an error. An address carries at most one schedule, so
+// merging two has no correct answer and silently keeping the first would be the
+// worst of the three options.
+func TestAccumulateRejectsTwoSchedules(t *testing.T) {
+	t.Parallel()
+
+	totals := map[string]entry{}
+	err := accumulate(strings.NewReader(
+		"g1x=10ugnot;vesting=10ugnot,0,1\ng1x=20ugnot;vesting=20ugnot,0,2\n"),
+		"sheet", totals, stripComment, true)
+	if err == nil {
+		t.Fatal("got nil error, want a rejection of the second schedule")
+	}
+	if !strings.Contains(err.Error(), "at most one") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 // TestParseRowIgnoresVestingSuffix makes sure a vested sheet still totals to
 // the balances, not the balances plus their schedules.
 func TestParseRowIgnoresVestingSuffix(t *testing.T) {
@@ -108,7 +174,7 @@ func TestBuildWithVestingIsOptIn(t *testing.T) {
 
 	build := func(name string, extra ...string) string {
 		out := filepath.Join(dir, name)
-		args := append([]string{"-genbalance", genbalance, "-premine", premine, "-out", out}, extra...)
+		args := append([]string{"-genbalance", genbalance, "-premine", premine, "-publicsale", "", "-out", out}, extra...)
 		if err := runBuild(args); err != nil {
 			t.Fatalf("build %s: %v", name, err)
 		}
