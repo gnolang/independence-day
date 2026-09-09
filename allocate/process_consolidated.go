@@ -66,10 +66,11 @@ const TOTAL_SUPPLY = 1333000000
 // 7-bucket breakdown does not budget for it, so somebody has to pay for it.
 //
 // Was 2455000 until the test1 and test2 rows were removed on 2026-09-03 — both
-// were funded from mnemonics published in gnolang/gno's test fixtures.
+// were funded from mnemonics published in gnolang/gno's test fixtures. Was
+// 2345000 until 14 multisig signer gas-float rows were added (moul/gno-meta#107).
 //
 // TestPremineMatchesFile asserts this constant against the actual file.
-const TOTAL_PREMINE_NON_AIRDROP = 2345000
+const TOTAL_PREMINE_NON_AIRDROP = 2359000
 
 // FOUNDERS_SKIPPED_ABSORBED_BY_CONTRIBS is the part of the 7,000 GNOT founders
 // budget that is never paid out, because the founder in question already carries
