@@ -262,6 +262,7 @@ func main() {
 		parsers = []fileParser{
 			{"../../mkgenesis/balances.txt.gz", parseGnoBalance},
 			{"../../mkgenesis/non-airdrop.txt", parseGnoBalance},
+			{"../../mkgenesis/publicsale.txt", parseGnoBalance},
 			{"../../allocate/genbalance.txt.gz", parseConsolidateLine},
 		}
 		balanceFiles = make([]*balanceFile, 0, len(parsers))
@@ -283,12 +284,16 @@ func main() {
 		balanceFiles = append(balanceFiles, balanceFile)
 	}
 
-	// Add non-airdrop balances to the consolidate balance file.
-	fmt.Println("Adding non-airdrop to consolidate balance file")
-	balanceFiles[2].addBalances(balanceFiles[1])
+	// Rebuild what mkgenesis should have produced: the computed airdrop, plus
+	// the two hand-written sheets that are merged into it. Keep this in step
+	// with runBuild's inputs — a sheet that is merged but not added here shows
+	// up as a whole-file difference, which is the intended failure.
+	fmt.Println("Adding non-airdrop and public-sale to consolidate balance file")
+	balanceFiles[3].addBalances(balanceFiles[1])
+	balanceFiles[3].addBalances(balanceFiles[2])
 
 	// Compare mkgenesis balance file with the consolidate balance file.
-	if balanceFiles[0].compare(balanceFiles[2]) {
+	if balanceFiles[0].compare(balanceFiles[3]) {
 		fmt.Fprintln(os.Stderr, "Balance files DIFFER.")
 		os.Exit(1)
 	}

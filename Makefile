@@ -28,8 +28,8 @@ $(GENBALANCE): allocate/process_consolidated.go allocate/atone.go \
                policy/excluded.txt policy/ibc-escrow-addresses.txt
 	cd allocate && $(GO) run .
 
-# Stage 2 — mkgenesis: genbalance + premine -> balances.txt.gz
-$(BALANCES): $(GENBALANCE) mkgenesis/non-airdrop.txt
+# Stage 2 — mkgenesis: genbalance + premine + public sale -> balances.txt.gz
+$(BALANCES): $(GENBALANCE) mkgenesis/non-airdrop.txt mkgenesis/publicsale.txt
 	$(MAKE) -C mkgenesis
 
 ## ---------------------------------------------------------------- verify

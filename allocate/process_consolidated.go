@@ -54,6 +54,7 @@ const (
 
 	// Downstream artifacts, asserted by the tests in this package.
 	nonAirdropFile = "../mkgenesis/non-airdrop.txt"
+	publicSaleFile = "../mkgenesis/publicsale.txt"
 	balancesFile   = "../mkgenesis/balances.txt.gz"
 )
 
@@ -161,6 +162,25 @@ const (
 	TOTAL_AIRDROP_NT         = TOTAL_INVESTORS_UNLOCKED + TOTAL_INVESTORS_VESTING
 	TOTAL_AIRDROP_NT_LLC     = 332000000
 
+	// --- The public token sale ---------------------------------------------
+	//
+	// The Sonar sale (Ethereum mainnet, 0x959f2ceE7B6C2095d228692eCb2E4744f2D3fDb4)
+	// settled 122 wallets for 21,604,687.430103 GNOT. Buyers are investors, and
+	// their tokens are contractually lockup-free — so the sale is not an eighth
+	// bucket, it is the part of the §136 tranche that is already spoken for by
+	// name. Total supply does not move; INVESTORS_UNLOCKED_ADDRESS holds the
+	// tranche NET of it and the rest is written to the 68 rows in
+	// mkgenesis/publicsale.txt.
+	//
+	// This one is in ugnot, not GNOT, and cannot be anything else: a sale
+	// allocation is USD/clearing-price and lands on an arbitrary ugnot value.
+	// Hence assignUgnot() beside assign(). TestPublicSaleMatchesFile asserts the
+	// constant against the actual file.
+	TOTAL_PUBLIC_SALE_UGNOT = 21604687430103 // 21,604,687.430103 GNOT
+
+	// What actually reaches INVESTORS_UNLOCKED_ADDRESS: 128,395,312.569897 GNOT.
+	TOTAL_INVESTORS_UNLOCKED_UGNOT = TOTAL_INVESTORS_UNLOCKED*1000000 - TOTAL_PUBLIC_SALE_UGNOT
+
 	// The six real multisigs, from gnolang/multisigs config.toml. Each is the
 	// SAME signer set as the account it succeeds -- the three treasuries are the
 	// [govdao] members, the three ex-nt1 buckets are the [nt1] members -- with
@@ -256,7 +276,11 @@ func main() {
 
 	// Allocate Investors and NT,LLC to separate addresses (§123-124), with the
 	// §136 mainnet-unlocked tranche separated from the vesting remainder.
-	assign(totalDist, INVESTORS_UNLOCKED_ADDRESS, TOTAL_INVESTORS_UNLOCKED)
+	//
+	// The unlocked tranche is written NET of the public sale: the sale is the
+	// part of it that is already owed to named buyers, and those buyers are paid
+	// directly by mkgenesis/publicsale.txt. Supply is unchanged either way.
+	assignUgnot(totalDist, INVESTORS_UNLOCKED_ADDRESS, TOTAL_INVESTORS_UNLOCKED_UGNOT)
 	assign(totalDist, INVESTORS_VESTING_ADDRESS, TOTAL_INVESTORS_VESTING)
 	assign(totalDist, NT_LLC_ADDRESS, TOTAL_AIRDROP_NT_LLC)
 
@@ -369,18 +393,25 @@ var aibAtoneAddrs = []string{
 // If this ever fires, the fix is a decision (does the address keep its airdrop on
 // top of its allocation, or not?), not a code change — so it must not be silent.
 func assign(dist map[string]Distribution, addr string, gnot int) {
+	assignUgnot(dist, addr, int64(gnot)*1000000)
+}
+
+// assignUgnot is assign() at ugnot precision, for an allocation that is not a
+// whole number of GNOT. The public sale is the only one: it is denominated in
+// USD at a clearing price, so its residue after division is arbitrary.
+func assignUgnot(dist map[string]Distribution, addr string, ugnot int64) {
 	if existing, ok := dist[addr]; ok && !existing.Ugnot.IsZero() {
 		panic(fmt.Errorf(
 			"refusing to overwrite an existing entitlement: %s already holds %s ugnot "+
-				"(from source address %s) and would be replaced by a fixed allocation of %d GNOT; "+
+				"(from source address %s) and would be replaced by a fixed allocation of %d ugnot; "+
 				"decide explicitly whether the two should be summed",
-			addr, whole(existing.Ugnot.String()), existing.Account.Address, gnot))
+			addr, whole(existing.Ugnot.String()), existing.Account.Address, ugnot))
 	}
 
 	dist[addr] = Distribution{
 		Account:    Account{Address: addr},
 		GnoAddress: addr,
-		Ugnot:      types.NewDec(int64(gnot) * 1000000),
+		Ugnot:      types.NewDec(ugnot),
 	}
 }
 

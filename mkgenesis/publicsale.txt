@@ -1,0 +1,143 @@
+# Public token sale — genesis balances.
+#
+# The Sonar public sale, Ethereum mainnet, contract
+# 0x959f2ceE7B6C2095d228692eCb2E4744f2D3fDb4. Settlement snapshot 2026-09-09,
+# `address_bindings` max id 68. The full 122-wallet settlement, including the
+# wallets that are NOT in this file, is committed immutably at
+# ../inputs/publicsale-sonar-2026-09-09.csv; how the amounts were derived is in
+# ../inputs/README-publicsale-provenance.md.
+#
+# WHAT IS IN HERE
+#
+#   67 rows  12,266,287.839945 GNOT  participants who had named a gno.land
+#                                    address at the snapshot
+#    1 row    9,338,399.590158 GNOT  the [sale-unclaimed] 2-of-4 multisig, for
+#                                    the 55 who had not
+#   -------------------------------------------------
+#   68 rows  21,604,687.430103 GNOT  = the whole settled sale
+#
+# The total must equal TOTAL_PUBLIC_SALE_UGNOT in
+# allocate/process_consolidated.go — TestPublicSaleMatchesFile enforces it. The
+# same amount is deducted from the §136 Investors-unlocked tranche, so adding or
+# removing a row here moves GNOT between this file and
+# INVESTORS_UNLOCKED_ADDRESS rather than changing total supply.
+#
+# WHY A PARTICIPANT MAY BE MISSING
+#
+# Participants name the gno.land address they want their GNOT at by signing a
+# message with the Ethereum wallet that paid, at
+# https://sale.gno.land/distribution. That page has no deadline and the list
+# keeps growing. Genesis has to be cut at some instant; whoever had not bound by
+# then is owed their allocation out of the multisig row, distributed by hand.
+# Anyone binding after the snapshot falls in the multisig share. If genesis
+# slips, re-extract and rebuild.
+#
+# 25 OF THE 67 ALSO HOLD AN AIRDROP ENTITLEMENT
+#
+# They appear both here and in allocate/genbalance.txt.gz, for 315,720.117148
+# GNOT of airdrop between them. This is expected — the sale audience overlaps
+# the Cosmos Hub / AtomOne one, and a gno address is the same 20-byte key as the
+# cosmos address it was derived from. mkgenesis/build.go's accumulate() SUMS
+# them, which is the intended treatment: the airdrop is for holding ATOM/ATONE
+# at the 2022/2024 snapshots, the sale entitlement is for paying USD in 2026,
+# and neither is conditioned on the other. TestPublicSaleOverlapIsSummed pins
+# the set so that it cannot change without someone noticing.
+#
+# NO LOCKUP, WITH ONE EXCEPTION
+#
+# Sale allocations are lockup-free and fully liquid at genesis, so they carry no
+# §132 schedule. mkgenesis knows a row came from this file and subtracts it from
+# the amount the common schedule is computed over — which is what makes the 25
+# overlapping rows come out right: their AIRDROP portion still vests, their sale
+# portion does not.
+#
+# The one exception is `lockup_12m = yes` in the settlement: a US accredited
+# investor whose bid Sonar signed with `forcedLockup`. That row declares its own
+# schedule below — a 12-month cliff to 2027-09-10T00:00:00Z, over the sale
+# portion only, since the restriction attaches to what was purchased and not to
+# that address's airdrop.
+#
+# That address is one of the 25, and one address carries at most one schedule —
+# so the declared cliff REPLACES the common §132 schedule rather than stacking
+# with it, and its 1,995.215082 GNOT of airdrop ends up unscheduled. The
+# alternative is to express nothing at all, which is worse.
+#
+# THAT ONE SCHEDULE IS ONLY EMITTED WHEN VESTING IS ON. Like every other
+# schedule in this pipeline it is opt-in (`make VESTING_START=… VESTING_END=…`),
+# and the committed balances.txt.gz is built with vesting OFF. `mkgenesis build`
+# prints a loud warning when it drops a declared schedule, because with the
+# schedule dropped the restriction has to be honoured by hand instead.
+#
+g1279zrl88kuzjz5u8huzmulky9e3akqwaz0dt8e=3255813954ugnot
+g12sqtlpu4ga0an2wny80v975y8dgajelrvyp2pe=14550387598ugnot
+g12uucufc8g0vhqx92u6sjuyslx2vz97k0mhq6jd=18604651162ugnot
+g13enw4ph4jwh2mqv07pxcsesyam5605cydps77n=1784583586046ugnot
+g13hsacd5wjejd9r4p7gp49psyl5w3jqw0x35cxj=12316279070ugnot
+g13wq3f03zty8xahfa0axwj4kpc9mrkv8ldcrcwd=35720930232ugnot
+g140knwp8w2kxj4f6skeuk60edwmphwwwxcs6eyx=12334883720ugnot
+g14hra7c6mxz587qj7cygvk3jkm7l8h8knzh5dcq=1705426357ugnot
+g14rzzradg2dne6v2k80265l6qglql9edf6tpnmm=1782945737ugnot
+g15a0600yc9pf2cjtx80g3lzhm99yl55zyuvwkjj=341085271318ugnot
+g16negggxcs5ad93z6f2tvpfnyz6nnydsktslp08=186046511627ugnot
+g16wg82skmtjvey8fr9ega27cvhux2wtmh7nnae9=1722480620ugnot
+g16wk2gntl7vma7qdt9zjt85xewfcer4rg3wpwd2=12706976744ugnot
+g173q2lr9gft7p6q2rs8nue7j7frfqdr4t32h5zj=1705426357ugnot
+g178gkc44jq4zyjgy2ssttn5jpzxjreltzxqg6k9=239641860466ugnot
+g18c0grhdx96lw2u5t9qchl390n5weu9znkwf5vm=1841860465ugnot;vesting=1841860465ugnot,0,1820534400;type=delayed
+g18kes28qn3nz9kmlluqvpvc85999d98cenyly47=36899224807ugnot
+g18u7yz0gm3y0gaqnwgw788e2e7qc4k2stz4tgq9=18604651162ugnot
+g19vtc43w5tzf3k87uvy78rtvatxc8x29xven3hs=3720930233ugnot
+g1aq4j6gz0tcj039nn74pdfefgksnqlld0znr4kd=1782945737ugnot
+g1aycf3z9pes3dd64pg2rzpmlfpj38tu3f370z5m=46609302325ugnot
+g1ayy8knfdhepp2rws2m8kq5jzjm67fsyl363kch=42232558139ugnot
+g1c3th4jzxrmpdn23xv4taewf064jvpsrpl205ru=140077519380ugnot
+g1c4cqfp4y66q67ydswnrefw7lugdsyrgfxeazpt=23193798450ugnot
+g1cc48d8fju7n5fjja05qhgzdsva0cczf3l8t029=2232558139ugnot
+g1cw4d6ayhdfk2wclvy8fvxff26l8naddqgmnpkl=2027906977ugnot
+g1czl7cxq2j74tuaj56zvwyqupdf4rr6tjdza9as=5230586046511ugnot
+g1da4xpgse3fklgll7nxvg8ly68vdm65adn4juqe=20465116279ugnot
+g1duskj02k4fh7gll2a0vef4xl22sty4u8ky93xe=3722697674ugnot
+g1e3ded8a735au6z2845rvaqhnh42796xcesg09k=3565891473ugnot
+g1ee57d33pcjdcwd0q09kxx6m74parvmg7na9l63=11227906976ugnot
+g1eefgyzuf473pa57260h6s3cuxwd43zf5p4yw3y=5581395350ugnot
+g1flu5w6ky2kxa9r5j3kuy2wxn0e2x3zkpr8mw0l=58498449612ugnot
+g1h28spejsk5glykd7e54c2mzrnc8hqjhf6whnea=1889922481ugnot
+g1hfddsq82tawt6df4eejn0sh2d73v0ac8thdgaj=18604651162ugnot
+g1hpgfqn2ksz40ss70kt4y8lrqd5zgv4n29tyfd4=25155038759ugnot
+g1k226pr4ezdupppfx9x55erlxsveygvwm5vyu5l=930232558139ugnot
+g1lsk2ve47zl7260zefryx2842f5fesgvwss2xw0=8902325582ugnot
+g1me5pu82zl5pfgt3g0t7wznvzqgycx76udsrw8j=1782945737ugnot
+g1mftyvps4cgcwygwg2jat6vcadscpe83t7e6cjf=34108527132ugnot
+g1mrhcvzkaslq2n8ph4wtf78g85jgv6xe6tyjv8w=121757364341ugnot
+g1n3mhyp9fvcmuu8l0q8qvjy07x0rql8q4vp3utp=530232558139ugnot
+g1nhh5ylfew99tj60zkus8qqrulxu8fgwe8afls7=36434108527ugnot
+g1njefr6rmzp8f7x33kwgqxqmd2hhlezatvnrmqp=1860465117ugnot
+g1nvq7z47z0kr92d4n6rz74dzr75d69guqs56mxd=27925581394ugnot
+g1p6wjkgpyfzp5epxk9zkf7wq7ual6mk0sqn9kq6=17730232558ugnot
+g1p824ept88e349z7tak2nwznjdyn6wpckug77kl=5767441861ugnot
+g1pgau0y96k6y2j2493rmq0f290vwj8ekxl2uamy=126201550388ugnot
+g1pp6rhcqgeag6vd5swugznclk49284kxuhx6qq6=3032558139ugnot
+g1q4gm7fpmtjur2659mvnh7cavk5uz9mx30dpu8q=23125581395ugnot
+g1qenjcqhqctxcdjrtjgnf6sewgjs74f4xtvmqe0=18660465117ugnot
+g1r44nngjxzwan22t0s7ta3lp4amn756aksyd8tn=23722480620ugnot
+g1ruk4r4k87e08mz6z5jd3g698yhak5ygc3yjvvn=9302325581ugnot
+g1sdaa2huuc9xph7033la63k6l7w4zazfde8ll5g=23313178295ugnot
+g1sn2hpzc7d3jq74d5ctsp402qeqvjs4qxrwxknm=62702486456ugnot
+g1syeqptfl0p0g6rqaw6g6erq03u8fn2vlhc4wqm=1782945737ugnot
+g1ta6leew26kkscrjw7eshpmz90jdj2vw9hnx5yz=930232558139ugnot
+g1tg9f7xd9e4fw66y2y8srzzxys940ys2xsjp2wn=60620155039ugnot
+g1up8qmhmw0crhp420zvregw5ntt2f77kxw3nss7=12248837210ugnot
+g1wndh22wyg7yqd702qwk6xvzgky2u5c79t997un=511627906977ugnot
+g1ww03h6sng0u6j72ee9s6hlt7j2actjx936l5z9=123665116279ugnot
+g1xty8z6ea5fy5y8fz3hr67ka36kzrm35snt72u3=29579069768ugnot
+g1y07l2xj0m0dd0dywe2ny8c2wg0mnzwaftssh6n=13175968992ugnot
+g1yda3v4gspsv97z9z2dde5fyzwuddkxjgg3e9jx=1739534884ugnot
+g1z89utvygweg5l56fsk8ak7t6hh88fd0a8kdeyv=170542635659ugnot
+g1zdqp8z0rlc340rfc7g4dpdr0sspylat5gug9ch=24301550388ugnot
+g1zlk4m02g52vq387lhf9tdcjuu4t2sffuajkdut=13693023256ugnot
+
+# The 55 who had not bound at the snapshot — gnolang/multisigs [sale-unclaimed],
+# 2-of-4 over alexis, dongwon, jaekwon, moul. A holding account, not a treasury:
+# every ugnot in it is already owed to a named buyer, the balance only ever goes
+# down, and it is expected to reach zero.
+g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0=9338399590158ugnot
