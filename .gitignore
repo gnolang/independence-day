@@ -3,3 +3,7 @@
 .#*
 .tmp/
 .claude/commands/pr-overview.md
+
+# build artifacts
+mkgenesis/mkgenesis
+allocate/allocate
