@@ -62,9 +62,10 @@ const (
 // mkgenesis/balances.txt.gz — the buckets below AND the non-airdrop premine.
 const TOTAL_SUPPLY = 1333000000
 
-// TOTAL_PREMINE_NON_AIRDROP is the sum of mkgenesis/non-airdrop.txt: two
-// faucets, three named contributors and 45 GitHub requesters. The finalized
-// 7-bucket breakdown does not budget for it, so somebody has to pay for it.
+// TOTAL_PREMINE_NON_AIRDROP is the sum of mkgenesis/non-airdrop.txt: three named
+// contributors, 45 GitHub requesters, 14 multisig signer gas floats and the
+// examples/ contributor airdrop. The finalized 7-bucket breakdown does not
+// budget for it, so somebody has to pay for it.
 //
 // Was 2455000 until the test1 and test2 rows were removed on 2026-09-03 — both
 // were funded from mnemonics published in gnolang/gno's test fixtures. Was
@@ -72,10 +73,12 @@ const TOTAL_SUPPLY = 1333000000
 // Was 2359000 until 13 examples/ package authors were added at 10,000 GNOT each
 // (+130000, the contributor airdrop; gnolang/multisigs#43). That set is
 // INCOMPLETE: 14 more qualifying authors have no key in any registry yet, so
-// expect a further +140000 once multisigs#43 collects them.
+// expect a further +140000 once multisigs#43 collects them. Was 2489000 until
+// faucet0 and faucet1 were removed on 2026-09-09 (-2000000): there is no mainnet
+// faucet, and a faucet was never an Ecosystem Treasury purpose under §322-328.
 //
 // TestPremineMatchesFile asserts this constant against the actual file.
-const TOTAL_PREMINE_NON_AIRDROP = 2489000
+const TOTAL_PREMINE_NON_AIRDROP = 489000
 
 // PREMINE_ABSORBED_FROM_CONTRIBS decides who pays for the premine above.
 // This is the ONE LINE to flip; everything else follows.
@@ -134,10 +137,9 @@ const (
 	// rather than TOTAL_PREMINE_NON_AIRDROP keeps the option A/B/C switch above
 	// working: under option A nothing is charged to any treasury.
 	//
-	// NOTE this includes 2,000,000 GNOT of faucet funding, which is chain
-	// operations rather than ecosystem development and arguably does not belong
-	// in this treasury at all under §226. Left here because moving it needs a
-	// decision about where the faucet IS funded from.
+	// The 2,000,000 GNOT of faucet funding that used to sit in here — chain
+	// operations rather than ecosystem development, and not a purpose §322-328
+	// can accommodate — was removed on 2026-09-09. There is no mainnet faucet.
 	PREMINE_CHARGED_TO_ECOSYSTEM = PREMINE_ABSORBED_FROM_CONTRIBS
 
 	// Net amounts written to the three treasury addresses.

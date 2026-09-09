@@ -91,17 +91,18 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 	// What actually reaches the three addresses, after the founders and the
 	// premine are charged out of them. 117,648,000 is the single GovDAO T1 line
 	// this replaces.
-	// 117,505,000, not the 117,648,000 this branch was written against: the
-	// GovDAO T1 line itself moved three times on main since then. Skipping Jae's
-	// founders allocation (moul/gno-meta#102) leaves 1,000 GNOT in the
+	// 119,505,000, not the 117,648,000 this branch was written against: the
+	// GovDAO T1 line itself has moved four times on main since then. Skipping
+	// Jae's founders allocation (moul/gno-meta#102) leaves 1,000 GNOT in the
 	// treasuries, the 14 signer gas-float rows (moul/gno-meta#107) take 14,000
-	// out of them, and the 13 contributor-airdrop rows (gnolang/multisigs#43)
-	// take a further 130,000. Expect this to drop again to 117,365,000 when the
-	// remaining 14 qualifying authors get keys.
-	assert.Equal(t, 117505000,
+	// out of them, the 13 contributor-airdrop rows (gnolang/multisigs#43) take a
+	// further 130,000, and removing faucet0/faucet1 returns 2,000,000 to them.
+	// Expect this to drop to 119,365,000 when the remaining 14 qualifying
+	// authors get keys.
+	assert.Equal(t, 119505000,
 		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
 		"must equal the single GovDAO line it replaces")
-	assert.Equal(t, 117505000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP,
+	assert.Equal(t, 119505000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP,
 		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR,
 		"everything charged out of the treasuries must still be inside the 120M")
 
@@ -308,10 +309,15 @@ func TestGenesisFileTotal(t *testing.T) {
 	t.Cleanup(func() { zr.Close() })
 
 	var (
-		sum   int64
-		rows  int
-		seen  = make(map[string]struct{})
-		valid = regexp.MustCompile(`^g1[0-9a-z]{38}=[0-9]+ugnot$`)
+		sum  int64
+		rows int
+		seen = make(map[string]struct{})
+		// A row may carry a declared vesting schedule. Before 2026-09-09 those
+		// were dropped whenever vesting was off, which is every committed build,
+		// so this pattern never had to allow one -- and that was exactly the bug:
+		// a legally-mandated lockup was being discarded on the way to the sheet.
+		valid = regexp.MustCompile(
+			`^g1[0-9a-z]{38}=[0-9]+ugnot(;vesting=[0-9]+ugnot,[0-9]+,[0-9]+(;type=[a-z]+)?)?$`)
 	)
 	sc := bufio.NewScanner(zr)
 	for sc.Scan() {
@@ -319,7 +325,10 @@ func TestGenesisFileTotal(t *testing.T) {
 		rows++
 		require.True(t, valid.MatchString(line), "malformed row %d: %q", rows, line)
 
-		addr, amount, _ := strings.Cut(line, "=")
+		// Sum the BALANCE only. The vesting clause restates part of the same
+		// balance, so counting it would double-count that row against the cap.
+		balance, _, _ := strings.Cut(line, ";")
+		addr, amount, _ := strings.Cut(balance, "=")
 		if _, dup := seen[addr]; dup {
 			t.Fatalf("duplicate address %s", addr)
 		}

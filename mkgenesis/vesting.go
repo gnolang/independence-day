@@ -74,14 +74,20 @@ func newVesting(start, end, unlockPct int64, exempt string) (*vesting, error) {
 //
 // Three cases, in order:
 //
-//  1. Vesting is off. NOTHING gets a schedule, not even a row that declared one
-//     — the whole mechanism is opt-in, and the output stays byte-identical to a
-//     build from before it existed. build.go warns about every schedule dropped
-//     this way, because with it dropped the restriction has to be honoured by
-//     hand.
-//  2. The row declared its own schedule. It is emitted verbatim and the common
-//     schedule does not also apply: one address carries at most one schedule,
-//     and a declared one exists precisely because §132 cannot express it.
+//  1. The row declared its own schedule. It is emitted verbatim, ALWAYS —
+//     including when vesting is off. A declared schedule is not part of the
+//     opt-in §132 mechanism; it is a restriction that arrived with the input
+//     data because §132 cannot express it, and for the public-sale lockup row it
+//     is a legal obligation rather than a policy choice. Dropping it produced a
+//     shipped sheet in which a forced-lockup allocation was fully liquid at
+//     genesis, with only a build-log WARNING to say so. A restriction that
+//     survives only in an input file the artifact discards is not a restriction.
+//     One address carries at most one schedule, so a declared one also
+//     suppresses the common schedule.
+//  2. Vesting is off, and the row declared nothing. Unchanged — no schedule.
+//     Everything that is merely subject to §132 stays opt-in, and the output is
+//     byte-identical to a build from before the vesting pass existed apart from
+//     the declared rows above.
 //  3. Otherwise the common §132 schedule, computed over the balance MINUS the
 //     part that is liquid at genesis (r.unlocked — see entry in build.go). For
 //     an ordinary row unlocked is 0 and this is the plain 96%; for a public-sale
@@ -93,11 +99,12 @@ func newVesting(start, end, unlockPct int64, exempt string) (*vesting, error) {
 // total supply, and even that times 100 is still two orders of magnitude below
 // int64's range.
 func (v *vesting) apply(r row) string {
-	if v == nil {
-		return r.line
-	}
+	// A declared schedule is honoured even when vesting is off -- see (1) above.
 	if r.schedule != "" {
 		return r.line + r.schedule
+	}
+	if v == nil {
+		return r.line
 	}
 	if v.exempt[r.addr] {
 		return r.line
