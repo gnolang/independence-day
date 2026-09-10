@@ -11,10 +11,11 @@
 GO      ?= go
 
 GENBALANCE := allocate/genbalance.txt.gz
+ALLOC_README := allocate/README.md
 BALANCES   := mkgenesis/balances.txt.gz
 
 .PHONY: all
-all: $(BALANCES)
+all: $(BALANCES) $(ALLOC_README)
 
 ## ---------------------------------------------------------------- pipeline
 
@@ -27,6 +28,12 @@ $(GENBALANCE): allocate/process_consolidated.go allocate/atone.go \
                inputs/cosmoshub-10562840.json.gz inputs/atomone-6439117.json.gz \
                policy/excluded.txt policy/ibc-escrow-addresses.txt
 	cd allocate && $(GO) run .
+
+# allocate/README.md is a report on the artifact above, not part of producing it
+# — mkgenesis/README.md has the same relationship to balances.txt. Both are
+# pinned by golden tests, so a stale one is a red build.
+$(ALLOC_README): $(GENBALANCE) allocate/readme.go
+	cd allocate && $(GO) run . readme
 
 # Stage 2 — mkgenesis: genbalance + premine + public sale -> balances.txt.gz
 $(BALANCES): $(GENBALANCE) mkgenesis/non-airdrop.txt mkgenesis/publicsale.txt
