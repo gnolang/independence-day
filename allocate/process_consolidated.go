@@ -351,7 +351,7 @@ var govdaoFounders = []string{
 	"g1m0rgan0rla00ygmdmp55f5m0unvsvknluyg2a4", // Morgan
 	"g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq", // Maxwell
 	"g1e6gxg5tvc55mwsn7t7dymmlasratv7mkv0rap2", // Milos
-	"g1mx4pum9976th863jgry4sdjzfwu03qan5w2v9j", // Ray
+	"g1aeddlftlfk27ret5rf750d7w5dume3kcsm8r8m", // Aeddi
 }
 
 // govdaoFoundersSkipped lists founders who do NOT receive the fixed 1,000 GNOT
