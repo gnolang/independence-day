@@ -8,9 +8,9 @@ and produces the file that a chain's genesis builder actually downloads.
 
 ```
 ../allocate/genbalance.txt.gz   3,262,351 rows   (computed)
-+ non-airdrop.txt                      77 rows / 68 addresses   (hand-written, mostly 2022)
++ non-airdrop.txt                      75 rows / 66 addresses   (hand-written, mostly 2022)
 + publicsale.txt                       68 rows / 68 addresses   (hand-written, the Sonar sale)
-= balances.txt.gz               3,262,457 rows
+= balances.txt.gz               3,262,454 rows
 ```
 
 The rows do not add up to the output because **this stage sums duplicates**, and three different kinds
@@ -19,11 +19,11 @@ of duplicate occur:
 | Overlap | Addresses | What it is |
 |---|---:|---|
 | within `non-airdrop.txt` | 9 | a multisig signer with both a gas float and a contributor-airdrop row |
-| `non-airdrop.txt` ∩ airdrop | 5 | 2022 contributors and founders who also hold a snapshot entitlement |
+| `non-airdrop.txt` ∩ airdrop | 6 | 2022 contributors and founders who also hold a snapshot entitlement |
 | `publicsale.txt` ∩ airdrop | 25 | sale participants who also hold a snapshot entitlement |
 | `non-airdrop.txt` ∩ `publicsale.txt` | 0 | |
 
-3,262,351 + (68 − 5) + (68 − 25) = **3,262,457**.
+3,262,351 + (66 − 6) + (68 − 25) = **3,262,454**.
 
 The 25 are expected rather than surprising: the sale audience overlaps the Cosmos Hub / AtomOne one,
 and a gno address is the same 20-byte key as the cosmos address it derives from. They are pinned by

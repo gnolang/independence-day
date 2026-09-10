@@ -15,7 +15,7 @@ allocate/genbalance.txt.gz        3,262,351 rows
         ├── mkgenesis/non-airdrop.txt      75 rows,   489,000 GNOT
         ├── mkgenesis/publicsale.txt       68 rows, 21,604,687.430103 GNOT
         ▼  cd mkgenesis && make            (concatenate, sum duplicates, sort desc)
-mkgenesis/balances.txt.gz         3,262,457 rows
+mkgenesis/balances.txt.gz         3,262,454 rows
         │
         ▼  fetched by raw URL
 gnolang/gno  misc/deployments/gnoland1/gen-genesis.sh
