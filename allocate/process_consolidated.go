@@ -347,7 +347,7 @@ var aibCosmosAddrs = []string{
 var govdaoFounders = []string{
 	"g1ecsuj0q572jr0dhu29q9njtnmw03hyu7tyyvv6", // Jae
 	"g1manfred47kzduec920z88wfr64ylksmdcedlf5", // Manfred
-	"g12vx7dn3dqq89mz550zwunvg4qw6epq73d9csay", // Dongowon
+	"g1gzhj234kpajz963z5vf42j4ylddscnkez2wvly", // Dongowon
 	"g1m0rgan0rla00ygmdmp55f5m0unvsvknluyg2a4", // Morgan
 	"g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq", // Maxwell
 	"g1e6gxg5tvc55mwsn7t7dymmlasratv7mkv0rap2", // Milos
