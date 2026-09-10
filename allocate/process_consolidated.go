@@ -226,6 +226,17 @@ func init() {
 }
 
 func main() {
+	// `go run . readme` regenerates README.md from the committed
+	// genbalance.txt.gz. It is a separate subcommand rather than a step at the
+	// end of the run because recomputing the allocation takes ~90s, and the
+	// report only ever describes the artifact that is already on disk.
+	if len(os.Args) > 1 && os.Args[1] == "readme" {
+		if err := runReadme(os.Args[2:]); err != nil {
+			panic(err)
+		}
+		return
+	}
+
 	var bz []byte
 	var err error
 	var file *os.File
