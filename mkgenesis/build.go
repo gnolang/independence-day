@@ -52,6 +52,7 @@ func runBuild(args []string) error {
 	genbalance := fs.String("genbalance", "../allocate/genbalance.txt.gz", "gzipped airdrop rows, <source>:<addr>=<amount>ugnot")
 	premine := fs.String("premine", "non-airdrop.txt", "hand-written premine rows, # starts a comment")
 	publicsale := fs.String("publicsale", "publicsale.txt", "public token sale rows, unlocked at genesis; empty to skip")
+	investors := fs.String("investors", "investors.txt", "investor/partner distributions, unlocked at genesis; empty to skip")
 	out := fs.String("out", "balances.txt", "merged output")
 	vestingStart := fs.Int64("vesting-start", genesisVestingStart, "unix seconds GNOT becomes transferrable (§132)")
 	vestingEnd := fs.Int64("vesting-end", genesisVestingEnd, "unix seconds the schedule completes, start + 24 months")
@@ -85,6 +86,14 @@ func runBuild(args []string) error {
 	totals := make(map[string]entry)
 	if err := readPremine(*premine, totals); err != nil {
 		return err
+	}
+	// Same treatment as the sale, and for the same reason: both are paid out of
+	// the §136 UNLOCKED tranche, so both are liquid at genesis and neither
+	// carries a §132 schedule.
+	if *investors != "" {
+		if err := readPublicSale(*investors, totals); err != nil {
+			return err
+		}
 	}
 	if *publicsale != "" {
 		if err := readPublicSale(*publicsale, totals); err != nil {

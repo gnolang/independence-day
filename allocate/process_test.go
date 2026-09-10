@@ -117,14 +117,16 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 	assert.Equal(t, 300000000, TOTAL_INVESTORS_UNLOCKED+TOTAL_INVESTORS_VESTING)
 	assert.Equal(t, 150000000, TOTAL_INVESTORS_UNLOCKED)
 
-	// The public sale is carved OUT of the §136 tranche, not added beside it:
-	// what INVESTORS_UNLOCKED_ADDRESS receives plus what the 68 sale rows
-	// receive is still exactly 150,000,000 GNOT.
+	// The sale AND the investor distributions are carved OUT of the §136 tranche,
+	// not added beside it: what INVESTORS_UNLOCKED_ADDRESS receives, plus the 68
+	// sale rows, plus the 9 distribution rows, is still exactly 150,000,000 GNOT.
 	assert.Equal(t, int64(TOTAL_INVESTORS_UNLOCKED)*1000000,
-		int64(TOTAL_INVESTORS_UNLOCKED_UGNOT)+int64(TOTAL_PUBLIC_SALE_UGNOT),
-		"the sale must come out of the unlocked tranche, not on top of it")
+		int64(TOTAL_INVESTORS_UNLOCKED_UGNOT)+
+			int64(TOTAL_PUBLIC_SALE_UGNOT)+
+			int64(TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT),
+		"the carve-outs must come out of the unlocked tranche, not on top of it")
 	assert.Positive(t, TOTAL_INVESTORS_UNLOCKED_UGNOT,
-		"the sale cannot be larger than the tranche it is carved from")
+		"the carve-outs cannot together be larger than the tranche they come from")
 }
 
 // TestPublicSaleMatchesFile keeps TOTAL_PUBLIC_SALE_UGNOT honest against the
@@ -151,6 +153,56 @@ func TestPublicSaleMatchesFile(t *testing.T) {
 	const saleUnclaimed = "g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0"
 	assert.Equal(t, int64(9338399590158), rows[saleUnclaimed],
 		"the [sale-unclaimed] holding row must be present and unchanged")
+}
+
+// TestInvestorDistributionsMatchFile keeps TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT
+// honest against mkgenesis/investors.txt, the same way the sale sheet is kept
+// honest. These are obligations owed to real counterparties: a row dropped here
+// is a debt that silently does not get paid at genesis, and because the tranche
+// is written NET of the constant, supply still balances and nothing else notices.
+func TestInvestorDistributionsMatchFile(t *testing.T) {
+	rows := readSheet(t, investorsFile)
+
+	var sum int64
+	for _, amount := range rows {
+		sum += amount
+	}
+
+	assert.Equal(t, int64(TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT), sum,
+		"TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT is out of date with %s", investorsFile)
+	assert.Len(t, rows, 9, "nine distributions are settled at genesis")
+
+	// Counterparties are not named in the sheet, and this assertion must not
+	// name them either: a list of forbidden names IS the disclosure it claims to
+	// prevent, written into a public repository by the very test meant to stop
+	// it. So assert the SHAPE of a row instead of the contents of a blocklist --
+	// address, amount, opaque label, nothing else. A well-meaning "clarifying"
+	// edit that appends who a row belongs to fails here, and it fails for every
+	// counterparty, including ones nobody thought to enumerate.
+	//
+	// Honest about the limit: this constrains the payable rows, not the prose in
+	// the header block above them. The header is reviewed by humans.
+	body, err := os.ReadFile(investorsFile)
+	require.NoError(t, err)
+	row := regexp.MustCompile(`^g1[0-9a-z]{38}=[0-9]+ugnot # investor[0-9]+$`)
+	for _, line := range strings.Split(string(body), "\n") {
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		assert.Regexp(t, row, line,
+			"investors.txt rows carry an opaque label only, never a counterparty")
+	}
+}
+
+// TestTheThreeSection136LinesSumToTheTranche is the property that makes the
+// carve-outs a re-shaping rather than a reallocation. §136 grants exactly
+// 150,000,000; the sale, the investor distributions and whatever is left on
+// INVESTORS_UNLOCKED_ADDRESS must account for all of it and nothing more.
+func TestTheThreeSection136LinesSumToTheTranche(t *testing.T) {
+	assert.Equal(t,
+		int64(TOTAL_INVESTORS_UNLOCKED)*1000000,
+		int64(TOTAL_INVESTORS_UNLOCKED_UGNOT)+TOTAL_PUBLIC_SALE_UGNOT+TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT,
+		"the §136 tranche must be exactly 150,000,000 GNOT across its three lines")
 }
 
 // TestPublicSaleRowsAreWellFormed asserts the two things gnogenesis does NOT
@@ -237,8 +289,15 @@ func TestPublicSaleOverlapIsSummed(t *testing.T) {
 // than added to it.
 func readSaleSheet(t *testing.T) map[string]int64 {
 	t.Helper()
+	return readSheet(t, publicSaleFile)
+}
 
-	f, err := os.Open(publicSaleFile)
+// readSheet is readSaleSheet generalised: investors.txt has the same grammar and
+// the same treatment, so it gets the same parser rather than a second copy.
+func readSheet(t *testing.T, path string) map[string]int64 {
+	t.Helper()
+
+	f, err := os.Open(path)
 	require.NoError(t, err)
 	t.Cleanup(func() { f.Close() })
 
@@ -250,13 +309,13 @@ func readSaleSheet(t *testing.T) map[string]int64 {
 			continue
 		}
 		addr, amount, ok := strings.Cut(line, "=")
-		require.True(t, ok, "malformed sale line: %q", line)
+		require.True(t, ok, "malformed line in %s: %q", path, line)
 		amount, _, _ = strings.Cut(amount, ";")
 		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
-		require.NoError(t, err, "malformed sale line: %q", line)
+		require.NoError(t, err, "malformed line in %s: %q", path, line)
 
 		_, dup := rows[addr]
-		require.False(t, dup, "duplicate sale address %s", addr)
+		require.False(t, dup, "duplicate address %s in %s", addr, path)
 		rows[addr] = v
 	}
 	require.NoError(t, sc.Err())
@@ -648,12 +707,14 @@ func TestTotal(t *testing.T) {
 		sum = sum.Add(amount_dec)
 	}
 
-	// genbalance.txt.gz carries the buckets only; the premine and the public
-	// sale are both added later by mkgenesis, out of their own sheets. Derived
-	// from the constants so that flipping PREMINE_ABSORBED_FROM_CONTRIBS does
-	// not silently break this test. The exact total of the SHIPPED file is
-	// asserted by TestGenesisFileTotal.
-	expected := types.NewDec(int64(TOTAL_SUPPLY-TOTAL_PREMINE_NON_AIRDROP)*1000000 - TOTAL_PUBLIC_SALE_UGNOT)
+	// genbalance.txt.gz carries the buckets only; the premine, the public sale
+	// and the investor distributions are all added later by mkgenesis, out of
+	// their own sheets. Derived from the constants so that flipping
+	// PREMINE_ABSORBED_FROM_CONTRIBS does not silently break this test. The exact
+	// total of the SHIPPED file is asserted by TestGenesisFileTotal.
+	expected := types.NewDec(int64(TOTAL_SUPPLY-TOTAL_PREMINE_NON_AIRDROP)*1000000 -
+		TOTAL_PUBLIC_SALE_UGNOT -
+		TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT)
 	delta := expected.Mul(types.NewDecWithPrec(1, 4)) // 0.01%
 	diff := sum.Sub(expected).Abs()
 

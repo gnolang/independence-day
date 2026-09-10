@@ -189,7 +189,7 @@ func TestBuildWithVestingIsOptIn(t *testing.T) {
 
 	build := func(name string, extra ...string) string {
 		out := filepath.Join(dir, name)
-		args := append([]string{"-genbalance", genbalance, "-premine", premine, "-publicsale", "", "-out", out}, extra...)
+		args := append([]string{"-genbalance", genbalance, "-premine", premine, "-publicsale", "", "-investors", "", "-out", out}, extra...)
 		if err := runBuild(args); err != nil {
 			t.Fatalf("build %s: %v", name, err)
 		}

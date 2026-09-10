@@ -55,6 +55,7 @@ const (
 	// Downstream artifacts, asserted by the tests in this package.
 	nonAirdropFile = "../mkgenesis/non-airdrop.txt"
 	publicSaleFile = "../mkgenesis/publicsale.txt"
+	investorsFile  = "../mkgenesis/investors.txt"
 	balancesFile   = "../mkgenesis/balances.txt.gz"
 )
 
@@ -180,8 +181,23 @@ const (
 	// constant against the actual file.
 	TOTAL_PUBLIC_SALE_UGNOT = 21604687430103 // 21,604,687.430103 GNOT
 
-	// What actually reaches INVESTORS_UNLOCKED_ADDRESS: 128,395,312.569897 GNOT.
-	TOTAL_INVESTORS_UNLOCKED_UGNOT = TOTAL_INVESTORS_UNLOCKED*1000000 - TOTAL_PUBLIC_SALE_UGNOT
+	// Investor and partner distributions already owed to named counterparties —
+	// market making, exchange listing and integration, ecosystem liquidity — paid
+	// at genesis out of the same §136 tranche and by the same reasoning as the
+	// sale: not an eighth bucket, just the part of the tranche already spoken
+	// for. 9 rows in mkgenesis/investors.txt; the counterparties are not named
+	// there and the mapping is held privately.
+	//
+	// Obligations settled AFTER genesis are deliberately absent, because the
+	// tranche multisig can pay them later and a genesis row cannot be undone.
+	// TestInvestorDistributionsMatchFile asserts this against the file.
+	TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT = 16076470000000 // 16,076,470 GNOT
+
+	// What actually reaches INVESTORS_UNLOCKED_ADDRESS: 112,318,842.569897 GNOT.
+	// The three §136 lines must still sum to 150,000,000 — TestSplitPreservesTheAggregate.
+	TOTAL_INVESTORS_UNLOCKED_UGNOT = TOTAL_INVESTORS_UNLOCKED*1000000 -
+		TOTAL_PUBLIC_SALE_UGNOT -
+		TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT
 
 	// The six real multisigs, from gnolang/multisigs config.toml. Each is the
 	// SAME signer set as the account it succeeds -- the three treasuries are the
