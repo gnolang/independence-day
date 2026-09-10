@@ -23,6 +23,10 @@ func TestBuildReproducesCommittedArtifacts(t *testing.T) {
 	balances := filepath.Join(dir, "balances.txt")
 	readme := filepath.Join(dir, "README.md")
 
+	// No vesting flags: the committed sheet is built with the defaults, so the
+	// defaults are exactly what this must reproduce. That is why the §132
+	// schedule lives in Go rather than in the Makefile -- if it lived there this
+	// test would have to restate it and the two copies would drift.
 	if err := runBuild([]string{
 		"-genbalance", "../allocate/genbalance.txt.gz",
 		"-premine", "non-airdrop.txt",

@@ -3,8 +3,13 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewVestingOffByDefault(t *testing.T) {
@@ -195,7 +200,9 @@ func TestBuildWithVestingIsOptIn(t *testing.T) {
 		return string(b)
 	}
 
-	off := build("off.txt")
+	// -no-vesting has to be asked for by name now: §132 covers every allocation,
+	// so a schedule-less sheet is a violation rather than a default.
+	off := build("off.txt", "-no-vesting")
 	if off != "g1aaa=100ugnot\ng1bbb=50ugnot\ng1ccc=25ugnot\n" {
 		t.Fatalf("vesting off produced %q", off)
 	}
@@ -210,4 +217,41 @@ func TestBuildWithVestingIsOptIn(t *testing.T) {
 			t.Errorf("vesting on missing %q\ngot:\n%s", want, on)
 		}
 	}
+}
+
+// TestVestingExemptMatchesAllocate keeps the §136 exemption in step with the
+// address that actually receives the tranche. The constant is declared in
+// allocate/process_consolidated.go and copied here because the two are separate
+// main packages; a copy nobody verifies goes stale, so this parses the real one
+// out of the source instead of trusting the copy.
+//
+// If it ever drifts, the exemption would be applied to an address that holds
+// nothing and the real 150,000,000 §136 tranche would vest — locking 96% of the
+// one allocation the Constitution says is unlocked at mainnet.
+func TestVestingExemptMatchesAllocate(t *testing.T) {
+	t.Parallel()
+
+	src, err := os.ReadFile("../allocate/process_consolidated.go")
+	require.NoError(t, err)
+
+	re := regexp.MustCompile(`INVESTORS_UNLOCKED_ADDRESS\s*=\s*"(g1[0-9a-z]{38})"`)
+	m := re.FindSubmatch(src)
+	require.NotNil(t, m, "INVESTORS_UNLOCKED_ADDRESS not found in allocate/")
+	assert.Equal(t, string(m[1]), genesisVestingExempt,
+		"the §136 exempt address moved in allocate/ but not in mkgenesis/vesting.go")
+}
+
+// TestGenesisVestingSpansTwentyFourMonths pins the shipped schedule to §132's
+// shape: it must start at the genesis timestamp and complete 24 calendar months
+// later. A fat-fingered digit here is not visible in any total — supply is
+// unchanged either way — so nothing else would catch it.
+func TestGenesisVestingSpansTwentyFourMonths(t *testing.T) {
+	t.Parallel()
+
+	start := time.Unix(genesisVestingStart, 0).UTC()
+	end := time.Unix(genesisVestingEnd, 0).UTC()
+
+	assert.Equal(t, start.AddDate(0, 24, 0), end, "§132: fully vested 24 months after the mainnet")
+	assert.Equal(t, 0, start.Hour()+start.Minute()+start.Second(), "genesis should be on a UTC midnight")
+	assert.True(t, end.After(start))
 }

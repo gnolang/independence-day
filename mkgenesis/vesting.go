@@ -28,6 +28,41 @@ import (
 // This runs after the merge, not in allocate/, because the schedule is a
 // function of an address's FINAL balance — known only once the premine has been
 // merged and duplicate addresses summed.
+// The Constitution §132 schedule, as shipped.
+//
+//	§132  "All Genesis $GNOT allocations vest on a common schedule: 4% unlocked
+//	       on the day $GNOT becomes transferrable (aka the mainnet), and a 4%
+//	       unlock every subsequent month for 24 months (fully vested 24 months
+//	       after the mainnet)."
+//
+// "(aka the mainnet)" settles the start date: it is the genesis timestamp, not a
+// later governance action. So there is exactly one value to choose, and the end
+// follows from it.
+//
+// These are the build DEFAULTS rather than Makefile variables on purpose. The
+// golden test rebuilds the sheet and compares it to the committed one; if the
+// schedule lived in the Makefile the test would have to restate it, and the two
+// copies would drift. Here there is one source of truth and the test simply
+// calls the same default.
+//
+// genesisVestingStart MUST equal the chain's genesis time. gnolang/gno's mainnet
+// builder pins the same instant in misc/deployments/mainnet.gno.land; if the two
+// disagree the schedule starts on the wrong day.
+const (
+	genesisVestingStart = 1789084800 // 2026-09-11T00:00:00Z — genesis
+	genesisVestingEnd   = 1852243200 // 2028-09-11T00:00:00Z — 24 calendar months later
+)
+
+// genesisVestingExempt is the §136 tranche — "150,000,000 tokens from the
+// Investors allocation are unlocked at the mainnet" — the only exception §132
+// admits. It is expressible only because that tranche has an address of its own.
+//
+// Declared in allocate/process_consolidated.go as INVESTORS_UNLOCKED_ADDRESS and
+// copied here because the two are separate main packages;
+// TestVestingExemptMatchesAllocate parses the real constant out of that source
+// rather than trusting this copy.
+const genesisVestingExempt = "g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76"
+
 type vesting struct {
 	start     int64 // unix seconds; the day GNOT becomes transferrable
 	end       int64 // unix seconds; start + 24 months

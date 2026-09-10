@@ -53,12 +53,28 @@ func runBuild(args []string) error {
 	premine := fs.String("premine", "non-airdrop.txt", "hand-written premine rows, # starts a comment")
 	publicsale := fs.String("publicsale", "publicsale.txt", "public token sale rows, unlocked at genesis; empty to skip")
 	out := fs.String("out", "balances.txt", "merged output")
-	vestingStart := fs.Int64("vesting-start", 0, "unix seconds GNOT becomes transferrable; 0 disables vesting")
-	vestingEnd := fs.Int64("vesting-end", 0, "unix seconds the schedule completes, normally start + 24 months")
+	vestingStart := fs.Int64("vesting-start", genesisVestingStart, "unix seconds GNOT becomes transferrable (§132)")
+	vestingEnd := fs.Int64("vesting-end", genesisVestingEnd, "unix seconds the schedule completes, start + 24 months")
 	vestingUnlockPct := fs.Int64("vesting-unlock-pct", 4, "percent unlocked at -vesting-start")
-	vestingExempt := fs.String("vesting-exempt", "", "addresses that receive no schedule, space- or comma-separated")
+	vestingExempt := fs.String("vesting-exempt", genesisVestingExempt, "addresses that receive no schedule, space- or comma-separated")
+	noVesting := fs.Bool("no-vesting", false, "build with NO §132 schedules (drafts and tests only)")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	// §132 covers "All Genesis $GNOT allocations", so a sheet with no schedules is
+	// a violation rather than a configuration: every holder would be 100% liquid
+	// at block 1 where 96% should be locked. That shipped for months because
+	// vesting defaulted to OFF and nothing said so out loud.
+	//
+	// It is still reachable -- the tests need it, and a draft build may want it --
+	// but it has to be asked for by name now.
+	if *noVesting {
+		*vestingStart, *vestingEnd = 0, 0
+	} else if *vestingStart == 0 {
+		return fmt.Errorf("refusing to build a sheet with no §132 vesting schedules: " +
+			"pass -vesting-start (the genesis timestamp, per §132 \"aka the mainnet\") " +
+			"and -vesting-end, or -no-vesting to say you mean it")
 	}
 
 	vest, err := newVesting(*vestingStart, *vestingEnd, *vestingUnlockPct, *vestingExempt)
