@@ -42,3 +42,69 @@ jobs:
 
       - name: Report supply totals
         run: make supply
+
+  # Regenerates the artifacts from source and fails if anything moved.
+  #
+  # This is a SEPARATE job from `test` on purpose: it takes ~2 minutes where the
+  # unit tests take seconds, and there is no reason to make fast feedback wait
+  # for it.
+  #
+  # WHY IT IS NEEDED, GIVEN THE GOLDEN TEST ALREADY EXISTS
+  #
+  # mkgenesis/golden_test.go rebuilds balances.txt and compares it to the
+  # committed one, and its comment claims it "fails whenever allocate/ is changed
+  # and mkgenesis/ is not regenerated". That is not true for a change to an
+  # allocate/ CONSTANT, because the golden test rebuilds from the committed
+  # allocate/genbalance.txt.gz rather than from allocate's code:
+  #
+  #   change a hardcoded address in allocate/process_consolidated.go
+  #     -> genbalance.txt.gz is NOT rebuilt        (nothing rebuilds it)
+  #     -> balances.txt.gz still matches it        (golden test passes)
+  #     -> crosscheck compares the two stale files (crosscheck passes)
+  #     -> every job green, artifacts pay the OLD address
+  #
+  # #68 went in exactly that way: it repointed dongwon's founders address and
+  # main's committed sheet kept paying the previous one. The chain is
+  # self-consistent while being wrong, so only regenerating the FIRST stage
+  # catches it.
+  generated:
+    name: artifacts are up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      # ~96s. Reads the committed snapshots in inputs/ and policy/ and rewrites
+      # allocate/genbalance.txt.gz. This is the stage nothing else re-runs.
+      - name: Regenerate allocate/genbalance.txt.gz
+        working-directory: ./allocate
+        run: go run .
+
+      # ~21s. `re` forces a clean rebuild rather than trusting mtimes, which on
+      # a fresh checkout are all identical and would skip the work.
+      - name: Regenerate mkgenesis artifacts
+        run: make -C mkgenesis re
+
+      - name: Fail if any generated artifact changed
+        run: |
+          if git diff --quiet; then
+            echo "Generated artifacts match the committed ones."
+            exit 0
+          fi
+          echo "::error::Generated artifacts do not match the committed ones."
+          echo
+          echo "Files that changed:"
+          git diff --stat
+          echo
+          echo "A constant or input was changed without rebuilding. From the repo root:"
+          echo
+          echo "    make            # regenerates both stages"
+          echo "    make verify     # tests + crosscheck + supply"
+          echo
+          echo "Commit the regenerated artifacts in the SAME commit as the change."
+          echo "gnolang/gno pins mkgenesis/balances.txt.gz by sha256, so a stale"
+          echo "artifact is a wrong genesis on a chain that cannot be edited after."
+          exit 1

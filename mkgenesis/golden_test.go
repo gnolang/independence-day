@@ -16,8 +16,16 @@ import (
 //
 // This is the check that made the Go rewrite safe to land — it proved the port
 // changed no byte of any committed file. It keeps earning its place afterwards:
-// it fails whenever allocate/ is changed and mkgenesis/ is not regenerated,
-// which is exactly how main went internally inconsistent between #45 and #47.
+// it fails whenever mkgenesis/ or its inputs (non-airdrop.txt, publicsale.txt)
+// change without a rebuild, which is how main went inconsistent between #45 and
+// #47.
+//
+// It does NOT catch a change to an allocate/ CONSTANT. It rebuilds from the
+// COMMITTED allocate/genbalance.txt.gz, so if that file was not regenerated the
+// comparison is stale-against-stale and passes. #68 repointed a founders address
+// and shipped a sheet still paying the old one with every job green. The
+// `generated` CI job exists to close that: it re-runs the allocate stage, which
+// nothing here does.
 func TestBuildReproducesCommittedArtifacts(t *testing.T) {
 	dir := t.TempDir()
 	balances := filepath.Join(dir, "balances.txt")
