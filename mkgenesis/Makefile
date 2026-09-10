@@ -25,7 +25,7 @@ VESTING_FLAGS = -vesting-start=$(VESTING_START) -vesting-end=$(VESTING_END) \
                 -vesting-exempt="$(VESTING_EXEMPT)"
 endif
 
-all: balances.txt.gz README.md
+all: balances.txt.gz README.md unrestricted.txt
 
 re: clean all
 
@@ -38,6 +38,11 @@ balances.txt.gz: balances.txt
 
 README.md: balances.txt
 	$(GO) run . readme
+
+# Constitution §126 exemption list. Derived from publicsale.txt plus the three
+# funds §127 names, so it cannot drift from the sheet it describes.
+unrestricted.txt: publicsale.txt unrestricted.go
+	$(GO) run . unrestricted
 
 clean:
 	rm -f balances.txt

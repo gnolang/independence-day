@@ -27,6 +27,8 @@ func main() {
 		err = runReadme(os.Args[2:])
 	case "supply":
 		err = runSupply(os.Args[2:])
+	case "unrestricted":
+		err = runUnrestricted(os.Args[2:])
 	default:
 		fmt.Fprintf(os.Stderr, "mkgenesis: unknown command %q\n\n", os.Args[1])
 		usage()
@@ -46,6 +48,7 @@ commands:
   build     merge genbalance.txt.gz + non-airdrop.txt into balances.txt
   readme    regenerate README.md from balances.txt
   supply    report rows, totals and sha256 for the committed artifacts
+  unrestricted  regenerate unrestricted.txt (Constitution §126 exemption list)
 
 Each command takes -h for its flags.
 `)
