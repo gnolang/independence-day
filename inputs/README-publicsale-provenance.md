@@ -19,11 +19,17 @@ The extract behind this file ends at `address_bindings` id **79**, whose newest 
 **2026-09-11T04:45:17.459Z**; it was taken 2026-09-11T06:32Z. 78 of the 122 had bound by then. The
 CSV marks them `GENESIS`; the other 44 are `UNCLAIMED`.
 
-**Quote the id, not a wall-clock instant.** The previous file was described here as the
+**Quote the id, not a wall-clock instant.** The previous extract was described here as the
 "2026-09-09T06:46Z" snapshot, which was a local (UTC+9) file timestamp written as if it were UTC.
-The true instant was 2026-09-08T21:47Z, and the extract ends at id 68 whose newest binding is
-2026-09-08T07:40:32.565Z. No binding predates either extract and is missing from it, so both files
-are sound; only the label was wrong.
+The true instant was 2026-09-08T21:47Z, and that extract ends at id 68 whose newest binding is
+2026-09-08T07:40:32.565Z. No binding predates either extract and is missing from it, so both were
+sound; only the label was wrong. Hence the id — it is a fact about the data rather than about
+whoever's laptop wrote the file.
+
+The id-68 extract is **not** in this directory: one extract lives here at a time and this one
+replaced it (see [`README.md`](./README.md)). It is in git at `9ecf4d3` — `git show
+9ecf4d3:inputs/publicsale-sonar-2026-09-09.csv` — and the two hold the same 122 wallets with
+identical amounts, differing only in which had bound.
 
 |  | wallets | ugnot |
 |---|---:|---:|
