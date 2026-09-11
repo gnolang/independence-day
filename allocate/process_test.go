@@ -214,20 +214,20 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 	// What actually reaches the three addresses, after the founders and the
 	// premine are charged out of them. 117,648,000 is the single GovDAO T1 line
 	// this replaces.
-	// 119,498,000, not the 117,648,000 this branch was written against: the
+	// 119,494,000, not the 117,648,000 this branch was written against: the
 	// GovDAO T1 line itself has moved six times on main since then. Skipping
 	// Jae's founders allocation (moul/gno-meta#102) leaves 1,000 GNOT in the
 	// treasuries, the 14 signer gas-float rows (moul/gno-meta#107) take 14,000
 	// out of them, the 13 contributor-airdrop rows (gnolang/multisigs#43) take a
 	// further 130,000, removing faucet0/faucet1 returns 2,000,000 to them, the
 	// founding validator set's gas float takes 6,000 out of §122, and the
-	// chain-service floats take 1,000 out of §120.
-	// Expect this to drop to 119,358,000 when the remaining 14 qualifying
+	// chain-service floats take 5,000 out of §120.
+	// Expect this to drop to 119,354,000 when the remaining 14 qualifying
 	// authors get keys.
-	assert.Equal(t, 119498000,
+	assert.Equal(t, 119494000,
 		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
 		"must equal the single GovDAO line it replaces")
-	assert.Equal(t, 119498000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP+
+	assert.Equal(t, 119494000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP+
 		TOTAL_GENESIS_VALIDATOR_FLOAT+TOTAL_CHAIN_SERVICE_FLOAT,
 		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR,
 		"everything charged out of the treasuries must still be inside the 120M")
