@@ -57,7 +57,7 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 ### Unrestricted addresses (§126)
 
 At genesis `$GNOT` is globally non-transferable, and §126 requires an exemption list.
-[`mkgenesis/unrestricted.txt`](mkgenesis/unrestricted.txt) is it — **71 addresses**, generated: the
+[`mkgenesis/unrestricted.txt`](mkgenesis/unrestricted.txt) is it — **82 addresses**, generated: the
 three funds §127 names (Ecosystem, and both Investors tranches) plus every row of `publicsale.txt`.
 It is derived rather than hand-written so a participant who binds an address cannot end up in the
 genesis but off the exemption list.
@@ -74,8 +74,8 @@ Three things are *not* separate buckets and surprise people:
   Sonar sale settled 122 wallets for 21,604,687.430103 GNOT; buyers are investors and their tokens are
   contractually lockup-free, so the sale is simply the part of that 150,000,000 which is already owed
   to named people. It comes *out of* the tranche, which is why the row above reads 128,395,312.569897
-  rather than 150,000,000. The 67 wallets that had named a gno.land address by the snapshot are paid
-  directly; the other 55 are paid to a 2-of-4 multisig
+  rather than 150,000,000. The 78 wallets that had named a gno.land address by the snapshot are paid
+  directly; the other 44 are paid to a 2-of-4 multisig
   (`g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0`) and distributed by hand as they come forward. See
   [`mkgenesis/publicsale.txt`](mkgenesis/publicsale.txt) and
   [`inputs/README-publicsale-provenance.md`](inputs/README-publicsale-provenance.md).

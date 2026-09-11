@@ -20,7 +20,7 @@ const denom = "ugnot"
 // unlocked is the part of the balance that is liquid at genesis and therefore
 // NOT subject to the common §132 schedule — today that is exactly what came
 // from publicsale.txt. It is tracked per address rather than as an exempt-list
-// because 25 of the 67 sale participants ALSO hold an airdrop entitlement at
+// because 26 of the 78 sale participants ALSO hold an airdrop entitlement at
 // the same address: exempting the whole row would let their airdrop ride free,
 // and vesting the whole row would lock up a sale allocation that is contractually
 // liquid. Subtracting gives the only answer that is right on both halves.

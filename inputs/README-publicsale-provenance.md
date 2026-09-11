@@ -6,7 +6,7 @@ It settled **122 wallets** for **21,604,687.430103 GNOT**.
 
 This file explains how each wallet's amount was derived, which of the 122 are in genesis and which
 are not, and what the one flagged row is. The settlement itself is
-[`publicsale-sonar-2026-09-09.csv`](./publicsale-sonar-2026-09-09.csv); the rows actually loaded are
+[`publicsale-sonar-2026-09-11.csv`](./publicsale-sonar-2026-09-11.csv); the rows actually loaded are
 [`../mkgenesis/publicsale.txt`](../mkgenesis/publicsale.txt).
 
 ## Which of the 122 are in genesis
@@ -15,19 +15,26 @@ Only the participants who **named a gno.land address**. A participant does that 
 with the Ethereum wallet that paid, at <https://sale.gno.land/distribution>; the site checks the
 address decodes and records the binding.
 
-At the snapshot instant — **2026-09-09T06:46Z**, `address_bindings` max id **68** — 67 of the 122 had
-bound. The CSV marks them `GENESIS`; the other 55 are `UNCLAIMED`.
+The extract behind this file ends at `address_bindings` id **79**, whose newest binding is
+**2026-09-11T04:45:17.459Z**; it was taken 2026-09-11T06:32Z. 78 of the 122 had bound by then. The
+CSV marks them `GENESIS`; the other 44 are `UNCLAIMED`.
+
+**Quote the id, not a wall-clock instant.** The previous file was described here as the
+"2026-09-09T06:46Z" snapshot, which was a local (UTC+9) file timestamp written as if it were UTC.
+The true instant was 2026-09-08T21:47Z, and the extract ends at id 68 whose newest binding is
+2026-09-08T07:40:32.565Z. No binding predates either extract and is missing from it, so both files
+are sound; only the label was wrong.
 
 |  | wallets | ugnot |
 |---|---:|---:|
-| In genesis | 67 | 12,266,287,839,945 |
-| of which base | | 10,421,557,472,871 |
-| of which bonus | | 1,844,730,367,074 |
-| **Not in genesis** | **55** | **9,338,399,590,158** |
+| In genesis | 78 | 16,521,530,801,184 |
+| of which base | | 13,994,946,775,197 |
+| of which bonus | | 2,526,584,025,987 |
+| **Not in genesis** | **44** | **5,083,156,628,919** |
 | Total settled | **122** | **21,604,687,430,103** |
 
-The 55 settled and are owed their allocation; they simply had not named an address in time. Their
-9,338,399,590,158 ugnot goes to the `[sale-unclaimed]` 2-of-4 multisig
+The 44 settled and are owed their allocation; they simply had not named an address in time. Their
+5,083,156,628,919 ugnot goes to the `[sale-unclaimed]` 2-of-4 multisig
 (`g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0`, `gnolang/multisigs`) and is distributed by hand as they
 come forward.
 
@@ -36,9 +43,11 @@ falls in the multisig share. If genesis slips, re-extract and rebuild rather tha
 
 ### On the counts
 
-The extract has **68 rows** for **67 wallets** — one wallet submitted twice, 28 seconds apart, to the
-same address — and at most **66 people**, because one Sonar entity owns two of the 67 wallets. Say
-"wallets", not "people".
+The extract has **79 rows** for **78 wallets** (one wallet submitted twice, 28 seconds apart, to the
+same address) and at most **77 people**, because one Sonar entity owns two of the 78 wallets. That
+last count is not checkable from this repository: entity ids live in the settlement bundle's
+bonus-distribution export, which carries 77 distinct `sale_specific_entity_id` across the 78
+wallets, one of them twice. Say "wallets", not "people".
 
 ## How the amounts were derived
 
@@ -53,7 +62,7 @@ accepted in full and no refunds were issued.
   log. The settlement CSV timestamp is the *last* bid and would have excluded 8 participants.
 
 `ugnot_total` **is** the total. Do not add the bonus columns to it — that would mint
-1,844,730,367,074 ugnot that nobody is owed.
+2,526,584,025,987 ugnot that nobody is owed.
 
 ## The one flagged row
 
@@ -90,30 +99,48 @@ Two things to know before relying on it:
    warning to say so. A declared schedule is not part of the opt-in §132 mechanism — it exists
    precisely because §132 cannot express it — so it is now honoured unconditionally.
 
-   **Consequence for `unrestricted_addrs`:** this row now carries a vesting line in the shipped
-   sheet, so caveat 2 below is live rather than theoretical. Whitelisting this address on a binary
-   that predates `331e17fc3` will panic at `InitChain`.
+   **Consequence for `unrestricted_addrs`:** caveat 2 below is live rather than theoretical.
 2. **The genesis binary must contain gno commit `331e17fc3`** (gnolang/gno#6095, 2026-08-28), which is
    on `master` only. `chain/pearl` and `chain/sapphire` carry the grammar but an older design where
    the account is not a `*GnoAccount`; there, a vesting address that also appears in
-   `unrestricted_addrs` makes `InitChain` **panic**. If the build does not contain it, do not ship the
-   vesting line at all — the fallback is to drop that row from the sheet and distribute it by hand,
-   which puts the genesis total at 12,264,445,979,480 and the multisig at 9,340,241,450,623.
+   `unrestricted_addrs` makes `InitChain` **panic**.
+
+   **This is not one row.** `unrestricted.txt` currently holds **28** addresses that also carry a
+   vesting line in the built `balances.txt`: the 26 sale participants who ALSO hold an airdrop
+   entitlement and so keep a §132 schedule over the airdrop half, plus two of the three §127 funds.
+   It was 27 before this snapshot. List them with
+
+       awk -F'#' '{print $1}' mkgenesis/unrestricted.txt | awk 'NF{print $1}' > /tmp/u
+       gzip -dc mkgenesis/balances.txt.gz |
+           awk -F= 'NR==FNR{u[$1];next} $1 in u && /;vesting=/ {print $1}' /tmp/u -
+
+   So dropping the one declared-schedule row is **not** a way to make an older binary safe: it
+   removes 1 of 28 triggers. Either build from a revision containing `331e17fc3`, or do not use
+   `unrestricted_addrs` at all on that binary. (For completeness, dropping that row alone would put
+   the genesis total at 16,519,688,940,719 and the multisig at 5,084,998,489,384, and it is still
+   the right move if the goal is to avoid shipping a lockup the binary cannot honour, as opposed to
+   avoiding the panic.)
 
 ## What has been verified
+
+The committed CSV carries no Ethereum address and no signature, by the privacy decision at the foot
+of this file, so the first three items below are author-attested and cannot be re-run from this
+repository alone. The aggregate band totals, the per-row arithmetic and the bech32 properties can.
 
 - Amounts reconcile to the ugnot against the bonus-distribution export and the binding recipients,
   all 122.
 - Tiered bands and 24h eligibility replayed from the Ethereum event log reproduce the settlement file,
   all 122.
-- All 68 binding signatures recover to the paying address, so every destination was authorised by its
+- All 79 binding signatures recover to the paying address, so every destination was authorised by its
   payer. Mutation-tested: one altered character anywhere breaks recovery.
-- All 67 destinations are valid bech32, distinct, none equal to an Ethereum address, minimum pairwise
+- All 78 destinations are valid bech32, distinct, none equal to an Ethereum address, minimum pairwise
   difference 31 of 40 characters.
 - Value is conserved from chain to file: no ugnot created or lost.
 - Re-read on-chain 2026-09-09 at block 25,935,858: all 244 (wallet, token) accepted amounts unchanged
   since the 2026-08-03 export, `stage() = 4` (Done), `totalAcceptedAmount() = 1,183,664,402,471`. The
-  contract is an immutable minimal proxy, so allocations cannot have been rewritten.
+  contract is an immutable minimal proxy, so allocations cannot have been rewritten. Deliberately not
+  repeated for this extract: the sale is closed and the proxy immutable, so no amount can move. What
+  changes between extracts is which wallets have bound, which is database state, not chain state.
 
 ## What has NOT been verified
 
@@ -121,9 +148,10 @@ Two things to know before relying on it:
 the address decodes. A valid address pasted in error loses those tokens permanently. This is a known
 property of the design, not a defect in this derivation.
 
-`signer` records how the destination was obtained. 63 came from Adena, which reads the address out of
-the extension, so those are key-backed by construction. 4 were pasted via gnokey and carry only a
-checksum — 24,480 GNOT, 0.20% of the sheet. Nothing can prove key control for those.
+`signer` records how the destination was obtained. 73 came from Adena, which reads the address out of
+the extension, so those are key-backed by construction. 5 were pasted via gnokey and carry only a
+checksum: 26,544.186046 GNOT, 0.16% of what is paid directly at genesis (0.12% of the whole
+settled sale). Nothing can prove key control for those.
 
 ## For anyone rebuilding this
 
