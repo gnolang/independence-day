@@ -151,8 +151,9 @@ func TestAccumulateRejectsTwoSchedules(t *testing.T) {
 
 	totals := map[string]entry{}
 	err := accumulate(strings.NewReader(
-		"g1x=10ugnot;vesting=10ugnot,0,1\ng1x=20ugnot;vesting=20ugnot,0,2\n"),
-		"sheet", totals, stripComment, true)
+		testAddr1+"=10ugnot;vesting=10ugnot,0,1\n"+
+			testAddr1+"=20ugnot;vesting=20ugnot,0,2\n"),
+		"sheet", totals, stripComment, true /*unlocked*/, true /*validateAddrs*/)
 	if err == nil {
 		t.Fatal("got nil error, want a rejection of the second schedule")
 	}
@@ -182,10 +183,10 @@ func TestBuildWithVestingIsOptIn(t *testing.T) {
 
 	dir := t.TempDir()
 	premine := filepath.Join(dir, "non-airdrop.txt")
-	if err := os.WriteFile(premine, []byte("g1aaa=100ugnot\ng1bbb=50ugnot\n"), 0o644); err != nil {
+	if err := os.WriteFile(premine, []byte(testAddr1+"=100ugnot\n"+testAddr2+"=50ugnot\n"), 0o644); err != nil {
 		t.Fatalf("writing premine: %v", err)
 	}
-	genbalance := writeGz(t, filepath.Join(dir, "genbalance.txt.gz"), "src:g1ccc=25ugnot\n")
+	genbalance := writeGz(t, filepath.Join(dir, "genbalance.txt.gz"), "src:"+testAddr3+"=25ugnot\n")
 
 	build := func(name string, extra ...string) string {
 		out := filepath.Join(dir, name)
@@ -203,15 +204,15 @@ func TestBuildWithVestingIsOptIn(t *testing.T) {
 	// -no-vesting has to be asked for by name now: §132 covers every allocation,
 	// so a schedule-less sheet is a violation rather than a default.
 	off := build("off.txt", "-no-vesting")
-	if off != "g1aaa=100ugnot\ng1bbb=50ugnot\ng1ccc=25ugnot\n" {
+	if off != testAddr1+"=100ugnot\n"+testAddr2+"=50ugnot\n"+testAddr3+"=25ugnot\n" {
 		t.Fatalf("vesting off produced %q", off)
 	}
 
 	on := build("on.txt", "-vesting-start=1780000000", "-vesting-end=1843072000")
 	for _, want := range []string{
-		"g1aaa=100ugnot;vesting=96ugnot,1780000000,1843072000\n",
-		"g1bbb=50ugnot;vesting=48ugnot,1780000000,1843072000\n",
-		"g1ccc=25ugnot;vesting=24ugnot,1780000000,1843072000\n",
+		testAddr1 + "=100ugnot;vesting=96ugnot,1780000000,1843072000\n",
+		testAddr2 + "=50ugnot;vesting=48ugnot,1780000000,1843072000\n",
+		testAddr3 + "=25ugnot;vesting=24ugnot,1780000000,1843072000\n",
 	} {
 		if !strings.Contains(on, want) {
 			t.Errorf("vesting on missing %q\ngot:\n%s", want, on)

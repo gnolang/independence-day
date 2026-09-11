@@ -156,7 +156,7 @@ func readPremine(path string, totals map[string]entry) error {
 	}
 	defer f.Close()
 
-	return accumulate(f, path, totals, stripComment, false)
+	return accumulate(f, path, totals, stripComment, false /*unlocked*/, true /*validateAddrs*/)
 }
 
 // readPublicSale adds the public token sale rows. Same grammar as the premine
@@ -169,7 +169,7 @@ func readPublicSale(path string, totals map[string]entry) error {
 	}
 	defer f.Close()
 
-	return accumulate(f, path, totals, stripComment, true)
+	return accumulate(f, path, totals, stripComment, true /*unlocked*/, true /*validateAddrs*/)
 }
 
 // stripComment drops everything from the first '#', matching what
@@ -197,7 +197,7 @@ func readGenbalance(path string, totals map[string]entry) error {
 	}
 	defer zr.Close()
 
-	return accumulate(zr, path, totals, secondColonField, false)
+	return accumulate(zr, path, totals, secondColonField, false /*unlocked*/, false /*validateAddrs*/)
 }
 
 // secondColonField reproduces `cut -d: -f2`: the text between the first and
@@ -222,7 +222,15 @@ func secondColonField(line string) string {
 // ";vesting=…" suffix is carried through, and a second one for the same address
 // is an error rather than a silent overwrite — one address can hold only one
 // schedule, so there is no correct way to merge two.
-func accumulate(r io.Reader, name string, totals map[string]entry, prepare func(string) string, unlocked bool) error {
+//
+// validateAddrs decodes every address as bech32. It is on for the hand-written
+// sheets and off for genbalance, and the asymmetry is the point: the hand-written
+// files are where a human pastes a counterparty address, and they hold a few
+// hundred rows, so the check is free. genbalance holds 3.26M rows produced by
+// allocate's addrKey — already canonical by construction — and decoding them all
+// costs ~3.4s, which would land on every build and every golden test. The shipped
+// artifact is still fully decoded once, by TestGenesisFileTotal.
+func accumulate(r io.Reader, name string, totals map[string]entry, prepare func(string) string, unlocked, validateAddrs bool) error {
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
@@ -235,6 +243,12 @@ func accumulate(r io.Reader, name string, totals map[string]entry, prepare func(
 		addr, amount, err := parseRow(line)
 		if err != nil {
 			return fmt.Errorf("%s:%d: %w", name, n, err)
+		}
+
+		if validateAddrs {
+			if err := checkAddr(addr); err != nil {
+				return fmt.Errorf("%s:%d: %w", name, n, err)
+			}
 		}
 
 		e := totals[addr]

@@ -129,9 +129,15 @@ run once `amount * pct` reached 2^53; that limit is gone.
   reproduces the `sort -t = -k 2 -n -r` this stage used to shell out to: it had no `-s`, so equal
   amounts fell back to the last-resort whole-line comparison, which `-r` reversed too. The tie-break is
   load-bearing — do not change it. Comparing bytes in Go also removes the old dependence on `LC_ALL`.
-- `balances.txt.gz` is bit-reproducible **only because** the Makefile passes `gzip -n`, which suppresses
-  the stored mtime and filename. Without `-n` every rebuild produces a different `.gz` for identical
-  content, which makes publishing a checksum meaningless.
+- `balances.txt.gz` is bit-reproducible under **two** conditions, and both are load-bearing:
+  1. The Makefile passes `gzip -n`, which suppresses the stored mtime and filename. Without `-n` every
+     rebuild produces a different `.gz` for identical content, which makes publishing a checksum
+     meaningless.
+  2. The `gzip` is **GNU**. macOS ships "Apple gzip", a separate implementation that honours `-n` and
+     emits valid output, but with a different deflate stream — ~243 KB smaller here, different sha256.
+     `make tools` refuses to run on a non-GNU gzip for this reason, and `make checksums` is what
+     actually catches it: the golden test decompresses before comparing, so it sees the plaintext and
+     never the container.
 - The `.gz` is still written by `gzip`, not by Go. Go's `compress/gzip` produces a different (smaller)
   container for identical content, and this path is a public contract — see below. `allocate/` does use
   Go's writer, which is why the two committed `.gz` files carry different OS bytes.
