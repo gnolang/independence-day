@@ -80,6 +80,84 @@ func TestFoundersBudgetMatchesSkipList(t *testing.T) {
 		"the founders bucket must be exactly what is paid out, with no remainder")
 }
 
+// TestGenesisValidatorFloatMatchesSkipList is TestFoundersBudgetMatchesSkipList
+// for the §122 validator gas float: the budget charged out of the Validator
+// Services Treasury must be exactly what is paid, so that adding a validator
+// without raising the budget, or skipping one without lowering it, is a red
+// build rather than a silent shift in the treasury's balance.
+func TestGenesisValidatorFloatMatchesSkipList(t *testing.T) {
+	eligible := 0
+	for _, addr := range genesisValidators {
+		if _, skipped := genesisValidatorsSkipped[addr]; !skipped {
+			eligible++
+		}
+	}
+	assert.Equal(t, len(genesisValidators)-len(genesisValidatorsSkipped), eligible,
+		"every genesisValidatorsSkipped entry must also appear in genesisValidators")
+
+	assert.Len(t, genesisValidators, 8,
+		"four founding validators, each a distinct (signing, operator) pair")
+	assert.Equal(t, 1000, GENESIS_VALIDATOR_FLOAT,
+		"the per-address float must stay at 1,000 GNOT")
+	assert.Equal(t, TOTAL_GENESIS_VALIDATOR_FLOAT, eligible*GENESIS_VALIDATOR_FLOAT,
+		"the float charged to §122 must be exactly what is paid out, with no remainder")
+}
+
+// TestGenesisValidatorsAreFunded asserts the END STATE rather than the code
+// path: every address in the founding validator set holds at least
+// GENESIS_VALIDATOR_FLOAT in the shipped sheet, whichever line put it there.
+//
+// This is the assertion that matters, and it is deliberately not "the six
+// eligible ones got a float". Two of the eight are skipped because they are
+// funded elsewhere — aeddi by the founders grant, the Berty operator by the
+// multisig signer float in non-airdrop.txt — and a skip is only safe for as long
+// as that other line exists. Delete either one and this test fails; without it,
+// deleting one would ship a validator that can never rotate a key, edit a
+// profile or opt out, with nothing to notice because §126 makes it unfixable
+// only after launch.
+func TestGenesisValidatorsAreFunded(t *testing.T) {
+	f, err := os.Open(balancesFile)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	zr, err := gzip.NewReader(f)
+	require.NoError(t, err)
+	t.Cleanup(func() { zr.Close() })
+
+	want := make(map[string]bool, len(genesisValidators))
+	for _, addr := range genesisValidators {
+		want[addr] = true
+	}
+
+	got := make(map[string]int64, len(genesisValidators))
+	sc := bufio.NewScanner(zr)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		balance, _, _ := strings.Cut(sc.Text(), ";")
+		addr, amount, ok := strings.Cut(balance, "=")
+		require.True(t, ok)
+		if !want[addr] {
+			continue
+		}
+		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
+		require.NoError(t, err)
+		got[addr] = v
+	}
+	require.NoError(t, sc.Err())
+
+	const floor = int64(GENESIS_VALIDATOR_FLOAT) * 1000000
+	for i, addr := range genesisValidators {
+		balance, ok := got[addr]
+		assert.Truef(t, ok,
+			"genesisValidators[%d] %s has NO row in %s — it can never pay for a tx",
+			i, addr, balancesFile)
+		assert.GreaterOrEqualf(t, balance, floor,
+			"genesisValidators[%d] %s holds %d ugnot, below the %d ugnot floor",
+			i, addr, balance, floor)
+		t.Logf("genesisValidators[%d] %s: %d ugnot", i, addr, balance)
+	}
+}
+
 // TestSplitPreservesTheAggregate is the property that makes this a re-shaping
 // rather than a reallocation: the six new addresses must carry exactly what the
 // two lines they replace carried.
@@ -91,24 +169,32 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 	// What actually reaches the three addresses, after the founders and the
 	// premine are charged out of them. 117,648,000 is the single GovDAO T1 line
 	// this replaces.
-	// 119,505,000, not the 117,648,000 this branch was written against: the
-	// GovDAO T1 line itself has moved four times on main since then. Skipping
+	// 119,499,000, not the 117,648,000 this branch was written against: the
+	// GovDAO T1 line itself has moved five times on main since then. Skipping
 	// Jae's founders allocation (moul/gno-meta#102) leaves 1,000 GNOT in the
 	// treasuries, the 14 signer gas-float rows (moul/gno-meta#107) take 14,000
 	// out of them, the 13 contributor-airdrop rows (gnolang/multisigs#43) take a
-	// further 130,000, and removing faucet0/faucet1 returns 2,000,000 to them.
-	// Expect this to drop to 119,365,000 when the remaining 14 qualifying
+	// further 130,000, removing faucet0/faucet1 returns 2,000,000 to them, and
+	// the founding validator set's gas float takes 6,000 out of §122.
+	// Expect this to drop to 119,359,000 when the remaining 14 qualifying
 	// authors get keys.
-	assert.Equal(t, 119505000,
+	assert.Equal(t, 119499000,
 		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
 		"must equal the single GovDAO line it replaces")
-	assert.Equal(t, 119505000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP,
+	assert.Equal(t, 119499000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP+TOTAL_GENESIS_VALIDATOR_FLOAT,
 		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR,
 		"everything charged out of the treasuries must still be inside the 120M")
 
 	// §333: the founders must not be paid from Ecosystem.
 	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, FOUNDERS_CHARGED_TO_CORE)
 	assert.Zero(t, TOTAL_TREASURY_ECOSYSTEM-TOTAL_TREASURY_ECOSYSTEM_NET-PREMINE_CHARGED_TO_ECOSYSTEM)
+
+	// §122: the validator gas float comes out of the Validator Services Treasury
+	// and out of nothing else. Ecosystem is ruled out by §346 (identified
+	// contributors) — the clause that removed the faucet — and Core already
+	// carries the founders.
+	assert.Equal(t, TOTAL_GENESIS_VALIDATOR_FLOAT, VALIDATOR_FLOAT_CHARGED_TO_VALIDATOR)
+	assert.Zero(t, TOTAL_TREASURY_VALIDATOR-TOTAL_TREASURY_VALIDATOR_NET-VALIDATOR_FLOAT_CHARGED_TO_VALIDATOR)
 
 	// §123-124 / §136: Investors and NT,LLC are the 632,000,000 nt1 line, and
 	// the unlocked tranche is exactly the 150,000,000 the Constitution names.
@@ -223,6 +309,12 @@ func TestPublicSaleRowsAreWellFormed(t *testing.T) {
 	}
 	for i, addr := range govdaoFounders {
 		fixed[addr] = fmt.Sprintf("govdaoFounders[%d]", i)
+	}
+	for i, addr := range genesisValidators {
+		if _, skipped := genesisValidatorsSkipped[addr]; skipped {
+			continue // already mapped by the role that funds it
+		}
+		fixed[addr] = fmt.Sprintf("genesisValidators[%d]", i)
 	}
 
 	for addr, amount := range rows {
