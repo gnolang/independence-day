@@ -134,6 +134,32 @@ const (
 	GENESIS_VALIDATOR_FLOAT       = 1000
 	TOTAL_GENESIS_VALIDATOR_FLOAT = 6 * GENESIS_VALIDATOR_FLOAT
 
+	// --- Chain-service addresses: the same float, a different reason -------
+	//
+	// Some addresses have to ACT on the chain from day one without being a
+	// validator, a founder or a contributor. The first is the approvals oracle
+	// for the inert-package policy: under `code_submission_policy=inert` a
+	// post-genesis package submission is PARKED until an address in
+	// vm.params pkg_approvers approves it, and approving is a paid tx. An
+	// oracle that cannot pay is an oracle that approves nothing, and under §126
+	// with no faucet it can never be funded afterwards -- so every
+	// post-genesis submission would park forever.
+	//
+	// Same 1,000 GNOT tier as the founders grant and the validator float, and
+	// for the oracle the tier is checkable rather than conventional: gnolang/gno
+	// contribs/gpao -- the package-approver daemon that would hold this key --
+	// broadcasts one MsgEnablePackage per approval at a default gas fee of
+	// 1,000,000 ugnot, so 1,000 GNOT is ~1,000 approvals. Its own per-run
+	// max-spend bound is 100 GNOT, a tenth of the float, so one misbehaving run
+	// cannot drain it. Enough to get started, not a standing budget: this is a
+	// float, and topping it up is GovDAO's business once §126 lifts.
+	//
+	// See chainServices for the list and SERVICES_CHARGED_TO_CORE for the
+	// bucket. TestChainServicesAreFunded asserts the end state on the shipped
+	// sheet.
+	CHAIN_SERVICE_FLOAT       = 1000
+	TOTAL_CHAIN_SERVICE_FLOAT = 1 * CHAIN_SERVICE_FLOAT
+
 	// --- Constitution §120-122: three treasuries, three addresses -----------
 	//
 	// These used to be one undifferentiated TOTAL_AIRDROP_CONTRIBS line paid to
@@ -158,6 +184,16 @@ const (
 	// treasuries shared one line this could not be shown either way; now it can.
 	FOUNDERS_CHARGED_TO_CORE = TOTAL_AIRDROP_GOVDAO_FOUNDERS
 
+	// §120's Core Treasury is for "Core Software + Essential Services", which
+	// is a positive match for the chain-service floats rather than an argument
+	// by elimination: an oracle that gates code submission on the production
+	// chain is an essential service of the core software. The other two buckets
+	// exclude it outright -- §122 is "validation services only" and an approvals
+	// oracle is not a validator, and §121 is "External Contributions" with §346
+	// restricting it to "contributors whose real human identity is known and
+	// recorded", which is the clause that removed the faucet.
+	SERVICES_CHARGED_TO_CORE = TOTAL_CHAIN_SERVICE_FLOAT
+
 	// §121 makes the Ecosystem Treasury "for prior and future Gno.land ecosystem
 	// development" and §140 makes GovDAO responsible for distributing it "to
 	// prior and future Gno.land ecosystem contributors" — so the 2022 contributor
@@ -179,7 +215,7 @@ const (
 	VALIDATOR_FLOAT_CHARGED_TO_VALIDATOR = TOTAL_GENESIS_VALIDATOR_FLOAT
 
 	// Net amounts written to the three treasury addresses.
-	TOTAL_TREASURY_CORE_NET      = TOTAL_TREASURY_CORE - FOUNDERS_CHARGED_TO_CORE
+	TOTAL_TREASURY_CORE_NET      = TOTAL_TREASURY_CORE - FOUNDERS_CHARGED_TO_CORE - SERVICES_CHARGED_TO_CORE
 	TOTAL_TREASURY_ECOSYSTEM_NET = TOTAL_TREASURY_ECOSYSTEM - PREMINE_CHARGED_TO_ECOSYSTEM
 	TOTAL_TREASURY_VALIDATOR_NET = TOTAL_TREASURY_VALIDATOR - VALIDATOR_FLOAT_CHARGED_TO_VALIDATOR
 
@@ -380,6 +416,12 @@ func main() {
 		assign(totalDist, addr, GENESIS_VALIDATOR_FLOAT)
 	}
 
+	// Allocate the chain-service floats (§120). Flat per-address, same as above.
+	for _, svc := range chainServices {
+		fmt.Printf("chain service float for %s: %s\n", svc.addr, svc.role)
+		assign(totalDist, svc.addr, CHAIN_SERVICE_FLOAT)
+	}
+
 	// Create gzipped file
 	outputFile, err := os.Create(outputFile)
 	if err != nil {
@@ -418,6 +460,36 @@ var aibCosmosAddrs = []string{
 	"cosmos12n3pqter204ks5mfzdtsz0hv2tr9cqmegnkc8r",
 	"cosmos1pu9ssyptk3fym7hawerv5tnfqenr3c0d92hl7a",
 	"cosmos1cxt79zavgr9qvqfx9hjsr9aqvpx7ftan8heqc6",
+}
+
+// chainService is an address that must be able to send a transaction from block
+// one in order for some part of the chain to function, without being a
+// validator, a founder or a contributor. The role is carried alongside the
+// address because "why does this address hold money?" must be answerable from
+// this file alone -- a bare g1 in a list is exactly the kind of row a reviewer
+// cannot check.
+type chainService struct {
+	addr string
+	role string
+}
+
+// chainServices is that list. Each entry gets CHAIN_SERVICE_FLOAT, charged to
+// the §120 Core Treasury (see SERVICES_CHARGED_TO_CORE).
+//
+// There is no skip list here, unlike genesisValidators: none of these addresses
+// holds anything from another line today, and if one ever does, assign() panics
+// and asks for a decision rather than silently summing or overwriting.
+//
+// Still UNFUNDED and not in this list: gnolang/gno's NAMES_ADMIN
+// (g1skl80c…, the [govdao] 4-of-7). It lands at zero after its genesis
+// names.Enable tx burns its funding, and any later names administration is a
+// paid tx. That is a separate decision -- the multisig is a governance body
+// rather than a service, so Core may not be its bucket.
+var chainServices = []chainService{
+	{
+		addr: "g1yaaa6rcp4ew5yjzdj4yms596wx2dtrj3a86704",
+		role: "inert-package approvals oracle (vm.params pkg_approvers)",
+	},
 }
 
 // genesisValidators is the founding validator set of gnoland-1, as
@@ -599,6 +671,13 @@ func validateHardcodedAddresses() {
 		if _, ok := valseen[addr]; !ok {
 			panic(fmt.Errorf("genesisValidatorsSkipped lists %s, which is not in genesisValidators", addr))
 		}
+	}
+
+	for i, svc := range chainServices {
+		if svc.role == "" {
+			panic(fmt.Errorf("chainServices[%d] (%s) has no role — an unexplained funded address is not reviewable", i, svc.addr))
+		}
+		check(svc.addr, fmt.Sprintf("chainServices[%d] (%s)", i, svc.role))
 	}
 }
 

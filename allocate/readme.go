@@ -13,8 +13,9 @@ import (
 )
 
 // syntheticHRP is the prefix of a row that was assigned rather than derived
-// from a snapshot: the buckets, the founders and the validator gas float. Every
-// other row carries the chain prefix of the snapshot the entitlement came from.
+// from a snapshot: the buckets, the founders, the validator gas float and the
+// chain-service floats. Every other row carries the chain prefix of the
+// snapshot the entitlement came from.
 const syntheticHRP = "g1"
 
 // runReadme regenerates README.md from the committed genbalance.txt.gz.
@@ -172,8 +173,8 @@ func (r *genbalanceReport) render(name string) string {
 
 	fmt.Fprintf(&b, "## the %d synthetic rows\n\n", len(r.synthetic))
 	b.WriteString("Rows whose source is a `g1…` address are assigned by `process_consolidated.go`\n")
-	b.WriteString("rather than derived from a snapshot: the purpose-bound buckets, the founders\n")
-	b.WriteString("and the founding validator set's gas float.\n")
+	b.WriteString("rather than derived from a snapshot: the purpose-bound buckets, the founders,\n")
+	b.WriteString("the founding validator set's gas float and the chain-service floats.\n")
 	b.WriteString("They are listed in full because they are the rows a reviewer must check by eye.\n\n")
 	b.WriteString("```\n")
 	for _, line := range r.synthetic {

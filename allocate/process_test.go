@@ -116,34 +116,7 @@ func TestGenesisValidatorFloatMatchesSkipList(t *testing.T) {
 // profile or opt out, with nothing to notice because §126 makes it unfixable
 // only after launch.
 func TestGenesisValidatorsAreFunded(t *testing.T) {
-	f, err := os.Open(balancesFile)
-	require.NoError(t, err)
-	t.Cleanup(func() { f.Close() })
-
-	zr, err := gzip.NewReader(f)
-	require.NoError(t, err)
-	t.Cleanup(func() { zr.Close() })
-
-	want := make(map[string]bool, len(genesisValidators))
-	for _, addr := range genesisValidators {
-		want[addr] = true
-	}
-
-	got := make(map[string]int64, len(genesisValidators))
-	sc := bufio.NewScanner(zr)
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for sc.Scan() {
-		balance, _, _ := strings.Cut(sc.Text(), ";")
-		addr, amount, ok := strings.Cut(balance, "=")
-		require.True(t, ok)
-		if !want[addr] {
-			continue
-		}
-		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
-		require.NoError(t, err)
-		got[addr] = v
-	}
-	require.NoError(t, sc.Err())
+	got := shippedBalances(t, genesisValidators)
 
 	const floor = int64(GENESIS_VALIDATOR_FLOAT) * 1000000
 	for i, addr := range genesisValidators {
@@ -158,6 +131,78 @@ func TestGenesisValidatorsAreFunded(t *testing.T) {
 	}
 }
 
+// TestChainServicesAreFunded is TestGenesisValidatorsAreFunded for the §120
+// chain-service floats. Same reasoning, different failure: an approvals oracle
+// that cannot pay for a tx approves nothing, so under
+// `code_submission_policy=inert` every post-genesis package submission parks
+// forever — and §126 plus no faucet means the address can never be topped up.
+func TestChainServicesAreFunded(t *testing.T) {
+	require.NotEmpty(t, chainServices,
+		"an empty list would make every assertion below vacuous")
+	assert.Equal(t, len(chainServices)*CHAIN_SERVICE_FLOAT, TOTAL_CHAIN_SERVICE_FLOAT,
+		"the float charged to §120 must be exactly what is paid out, with no remainder")
+
+	addrs := make([]string, len(chainServices))
+	for i, svc := range chainServices {
+		addrs[i] = svc.addr
+	}
+	got := shippedBalances(t, addrs)
+
+	const floor = int64(CHAIN_SERVICE_FLOAT) * 1000000
+	for i, svc := range chainServices {
+		balance, ok := got[svc.addr]
+		assert.Truef(t, ok,
+			"chainServices[%d] %s (%s) has NO row in %s — it can never pay for a tx",
+			i, svc.addr, svc.role, balancesFile)
+		assert.GreaterOrEqualf(t, balance, floor,
+			"chainServices[%d] %s (%s) holds %d ugnot, below the %d ugnot floor",
+			i, svc.addr, svc.role, balance, floor)
+		t.Logf("chainServices[%d] %s: %d ugnot (%s)", i, svc.addr, balance, svc.role)
+	}
+}
+
+// shippedBalances reads the balances of `addrs` out of the shipped sheet. It
+// answers "what does this address actually end up holding at genesis?", which
+// is the only question worth asking about a funding decision — the code path
+// that put it there is an implementation detail, and an address funded from
+// two different lines is still funded.
+func shippedBalances(t *testing.T, addrs []string) map[string]int64 {
+	t.Helper()
+
+	f, err := os.Open(balancesFile)
+	require.NoError(t, err)
+	t.Cleanup(func() { f.Close() })
+
+	zr, err := gzip.NewReader(f)
+	require.NoError(t, err)
+	t.Cleanup(func() { zr.Close() })
+
+	want := make(map[string]bool, len(addrs))
+	for _, addr := range addrs {
+		want[addr] = true
+	}
+
+	got := make(map[string]int64, len(addrs))
+	sc := bufio.NewScanner(zr)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		// The balance is the part before any ";vesting=…" clause: a schedule
+		// restates part of the same balance, it does not add to it.
+		balance, _, _ := strings.Cut(sc.Text(), ";")
+		addr, amount, ok := strings.Cut(balance, "=")
+		require.True(t, ok)
+		if !want[addr] {
+			continue
+		}
+		v, err := strconv.ParseInt(strings.TrimSuffix(amount, "ugnot"), 10, 64)
+		require.NoError(t, err)
+		got[addr] = v
+	}
+	require.NoError(t, sc.Err())
+
+	return got
+}
+
 // TestSplitPreservesTheAggregate is the property that makes this a re-shaping
 // rather than a reallocation: the six new addresses must carry exactly what the
 // two lines they replace carried.
@@ -169,25 +214,33 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 	// What actually reaches the three addresses, after the founders and the
 	// premine are charged out of them. 117,648,000 is the single GovDAO T1 line
 	// this replaces.
-	// 119,499,000, not the 117,648,000 this branch was written against: the
-	// GovDAO T1 line itself has moved five times on main since then. Skipping
+	// 119,498,000, not the 117,648,000 this branch was written against: the
+	// GovDAO T1 line itself has moved six times on main since then. Skipping
 	// Jae's founders allocation (moul/gno-meta#102) leaves 1,000 GNOT in the
 	// treasuries, the 14 signer gas-float rows (moul/gno-meta#107) take 14,000
 	// out of them, the 13 contributor-airdrop rows (gnolang/multisigs#43) take a
-	// further 130,000, removing faucet0/faucet1 returns 2,000,000 to them, and
-	// the founding validator set's gas float takes 6,000 out of §122.
-	// Expect this to drop to 119,359,000 when the remaining 14 qualifying
+	// further 130,000, removing faucet0/faucet1 returns 2,000,000 to them, the
+	// founding validator set's gas float takes 6,000 out of §122, and the
+	// chain-service floats take 1,000 out of §120.
+	// Expect this to drop to 119,358,000 when the remaining 14 qualifying
 	// authors get keys.
-	assert.Equal(t, 119499000,
+	assert.Equal(t, 119498000,
 		TOTAL_TREASURY_CORE_NET+TOTAL_TREASURY_ECOSYSTEM_NET+TOTAL_TREASURY_VALIDATOR_NET,
 		"must equal the single GovDAO line it replaces")
-	assert.Equal(t, 119499000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP+TOTAL_GENESIS_VALIDATOR_FLOAT,
+	assert.Equal(t, 119498000+TOTAL_AIRDROP_GOVDAO_FOUNDERS+TOTAL_PREMINE_NON_AIRDROP+
+		TOTAL_GENESIS_VALIDATOR_FLOAT+TOTAL_CHAIN_SERVICE_FLOAT,
 		TOTAL_TREASURY_CORE+TOTAL_TREASURY_ECOSYSTEM+TOTAL_TREASURY_VALIDATOR,
 		"everything charged out of the treasuries must still be inside the 120M")
 
 	// §333: the founders must not be paid from Ecosystem.
 	assert.Equal(t, TOTAL_AIRDROP_GOVDAO_FOUNDERS, FOUNDERS_CHARGED_TO_CORE)
 	assert.Zero(t, TOTAL_TREASURY_ECOSYSTEM-TOTAL_TREASURY_ECOSYSTEM_NET-PREMINE_CHARGED_TO_ECOSYSTEM)
+
+	// §120 "Core Software + Essential Services": Core carries the founders AND
+	// the chain-service floats, and nothing else is charged to it.
+	assert.Equal(t, TOTAL_CHAIN_SERVICE_FLOAT, SERVICES_CHARGED_TO_CORE)
+	assert.Zero(t, TOTAL_TREASURY_CORE-TOTAL_TREASURY_CORE_NET-
+		FOUNDERS_CHARGED_TO_CORE-SERVICES_CHARGED_TO_CORE)
 
 	// §122: the validator gas float comes out of the Validator Services Treasury
 	// and out of nothing else. Ecosystem is ruled out by §346 (identified
@@ -315,6 +368,9 @@ func TestPublicSaleRowsAreWellFormed(t *testing.T) {
 			continue // already mapped by the role that funds it
 		}
 		fixed[addr] = fmt.Sprintf("genesisValidators[%d]", i)
+	}
+	for i, svc := range chainServices {
+		fixed[svc.addr] = fmt.Sprintf("chainServices[%d]", i)
 	}
 
 	for addr, amount := range rows {
