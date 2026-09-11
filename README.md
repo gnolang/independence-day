@@ -41,12 +41,12 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 | Investors — unlocked at launch (§136) | 150,000,000 | 112,318,842.569897 to `g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76` — no vesting schedule — plus 21,604,687.430103 to the public sale and 16,076,470 to the investor and partner distributions, both below |
 | Investors — vesting (§132) | 150,000,000 | `g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3` |
 | NT,LLC (§124) | 332,000,000 | `g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p` |
-| Core Treasury (§120) | 39,993,000 | `g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9`; 40,000,000 less the founders and the chain-service floats |
+| Core Treasury (§120) | 39,989,000 | `g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9`; 40,000,000 less the founders and the chain-service floats |
 | Ecosystem Treasury (§121) | 59,511,000 | `g1ugke9x9ylrlex0lxcgw7eu0mdftvcrgglru0l0`; 60,000,000 less the premine |
 | Validator Services Treasury (§122) | 19,994,000 | `g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p`; 20,000,000 less the validator gas float |
 | GovDAO founders | 6,000 | 1,000 each to 6 of the 7 — Jae is skipped, he holds a snapshot entitlement. Charged to the Core Treasury (§333) |
 | Founding validator gas float | 6,000 | 1,000 each to 6 of the 8 — the four `INITIAL_VALSET` signing addresses and their four operators; aeddi and the Berty operator are skipped, both are already funded. Charged to the Validator Services Treasury (§122) |
-| Chain-service floats | 1,000 | 1,000 each to the addresses that must act from block one without being a validator, a founder or a contributor — today just the inert-package approvals oracle. Charged to the Core Treasury (§120, "Core Software + Essential Services") |
+| Chain-service floats | 5,000 | 5,000 each to the addresses that must act from block one without being a validator, a founder or a contributor — today just the inert-package approvals oracle. Five times the 1,000 tier because a service spends per event, continuously, and §126 leaves no way to top it up. Charged to the Core Treasury (§120, "Core Software + Essential Services") |
 | Non-airdrop premine | 489,000 | `mkgenesis/non-airdrop.txt` — charged to the Ecosystem Treasury |
 | **Total** | **1,333,000,000** | |
 

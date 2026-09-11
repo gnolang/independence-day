@@ -134,7 +134,7 @@ const (
 	GENESIS_VALIDATOR_FLOAT       = 1000
 	TOTAL_GENESIS_VALIDATOR_FLOAT = 6 * GENESIS_VALIDATOR_FLOAT
 
-	// --- Chain-service addresses: the same float, a different reason -------
+	// --- Chain-service addresses: a bigger float, and why ------------------
 	//
 	// Some addresses have to ACT on the chain from day one without being a
 	// validator, a founder or a contributor. The first is the approvals oracle
@@ -145,19 +145,28 @@ const (
 	// with no faucet it can never be funded afterwards -- so every
 	// post-genesis submission would park forever.
 	//
-	// Same 1,000 GNOT tier as the founders grant and the validator float, and
-	// for the oracle the tier is checkable rather than conventional: gnolang/gno
+	// 5,000 GNOT, deliberately FIVE TIMES the 1,000 tier the founders grant and
+	// the validator float sit at, because it is a different kind of spender.
+	// Those two pay for occasional management actions -- rotate a key, edit a
+	// profile, vote. A service spends per EVENT, continuously, for as long as
+	// the chain accepts packages, and nobody tops it up in between: §126 leaves
+	// only the exemption-listed funds able to send, so the next refill waits on
+	// the transfer lock lifting or a GovDAO proposal.
+	//
+	// The number is checkable rather than conventional. gnolang/gno
 	// contribs/gpao -- the package-approver daemon that would hold this key --
 	// broadcasts one MsgEnablePackage per approval at a default gas fee of
-	// 1,000,000 ugnot, so 1,000 GNOT is ~1,000 approvals. Its own per-run
-	// max-spend bound is 100 GNOT, a tenth of the float, so one misbehaving run
-	// cannot drain it. Enough to get started, not a standing budget: this is a
-	// float, and topping it up is GovDAO's business once §126 lifts.
+	// 1,000,000 ugnot, so 5,000 GNOT is ~5,000 approvals. Its own per-run
+	// max-spend bound is 100 GNOT, now a FIFTIETH of the float rather than a
+	// tenth, so a misbehaving run is even further from draining it.
+	//
+	// Still a float, not a standing budget: topping it up is GovDAO's business
+	// once §126 lifts.
 	//
 	// See chainServices for the list and SERVICES_CHARGED_TO_CORE for the
 	// bucket. TestChainServicesAreFunded asserts the end state on the shipped
 	// sheet.
-	CHAIN_SERVICE_FLOAT       = 1000
+	CHAIN_SERVICE_FLOAT       = 5000
 	TOTAL_CHAIN_SERVICE_FLOAT = 1 * CHAIN_SERVICE_FLOAT
 
 	// --- Constitution §120-122: three treasuries, three addresses -----------
