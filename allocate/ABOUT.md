@@ -33,11 +33,11 @@ go test ./...
 The first column is the **source** the entitlement came from — `cosmos1…` for the Cosmos Hub snapshot,
 `atone1…` for AtomOne, and `g1…` for the synthetic rows, which are the ones assigned outright rather
 than derived from a snapshot: the purpose-bound buckets (the three treasuries, the two Investors
-tranches, NT,LLC, nt2), the GovDAO founders and the founding validator set's gas float (§122 — the
+tranches, NT,LLC, nt2), the GovDAO founders, the founding validator set's gas float (§122 — the
 four `INITIAL_VALSET` signing addresses and their four operators, mirrored from `gnolang/gno`'s
-`misc/deployments/mainnet.gno.land`). The second column is always the gno address: the same
-20 bytes re-encoded with the `g` HRP. Keeping the source column is what makes the file auditable — you
-can see *why* a row exists.
+`misc/deployments/mainnet.gno.land`) and the §120 chain-service floats. The second column is always
+the gno address: the same 20 bytes re-encoded with the `g` HRP. Keeping the source column is what
+makes the file auditable — you can see *why* a row exists.
 
 `README.md` lists the current row count, the split by source, and every synthetic row in full. Those
 figures are deliberately not repeated here: this file is hand-written and would go stale, which is

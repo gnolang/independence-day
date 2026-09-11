@@ -8,7 +8,7 @@ regenerate this file with `cd allocate && go run . readme`.
 
 ## rows
 ```
-3262357 genbalance.txt.gz
+3262358 genbalance.txt.gz
 ```
 
 ## sum
@@ -26,8 +26,8 @@ the breakdown of the output by origin chain.
 |---|---:|
 | `atone1…` | 2602221 |
 | `cosmos1…` | 660117 |
-| `g1…` | 19 |
-| **total** | **3262357** |
+| `g1…` | 20 |
+| **total** | **3262358** |
 
 ## sample rows
 
@@ -39,11 +39,11 @@ cosmos100000aeu2lh0jrrnmn2npc88typ25u7td9wqxv:g100000aeu2lh0jrrnmn2npc88typ25u7t
 g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq:g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq=1000000000ugnot
 ```
 
-## the 19 synthetic rows
+## the 20 synthetic rows
 
 Rows whose source is a `g1…` address are assigned by `process_consolidated.go`
-rather than derived from a snapshot: the purpose-bound buckets, the founders
-and the founding validator set's gas float.
+rather than derived from a snapshot: the purpose-bound buckets, the founders,
+the founding validator set's gas float and the chain-service floats.
 They are listed in full because they are the rows a reviewer must check by eye.
 
 ```
@@ -62,8 +62,9 @@ g1manfred47kzduec920z88wfr64ylksmdcedlf5:g1manfred47kzduec920z88wfr64ylksmdcedlf
 g1mmgvcssjw6x4fzphupfg6mtxqt36v000c5rf2a:g1mmgvcssjw6x4fzphupfg6mtxqt36v000c5rf2a=1000000000ugnot
 g1n9y62agq998jt8w59az60xcqlftjknjg2grhn4:g1n9y62agq998jt8w59az60xcqlftjknjg2grhn4=1000000000ugnot
 g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p:g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p=332000000000000ugnot
-g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9:g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9=39994000000000ugnot
+g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9:g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9=39993000000000ugnot
 g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg:g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg=62126254516550ugnot
 g1ugke9x9ylrlex0lxcgw7eu0mdftvcrgglru0l0:g1ugke9x9ylrlex0lxcgw7eu0mdftvcrgglru0l0=59511000000000ugnot
 g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3:g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3=150000000000000ugnot
+g1yaaa6rcp4ew5yjzdj4yms596wx2dtrj3a86704:g1yaaa6rcp4ew5yjzdj4yms596wx2dtrj3a86704=1000000000ugnot
 ```
