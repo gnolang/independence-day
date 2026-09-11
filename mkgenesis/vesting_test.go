@@ -253,6 +253,10 @@ func TestGenesisVestingSpansTwentyFourMonths(t *testing.T) {
 	end := time.Unix(genesisVestingEnd, 0).UTC()
 
 	assert.Equal(t, start.AddDate(0, 24, 0), end, "§132: fully vested 24 months after the mainnet")
-	assert.Equal(t, 0, start.Hour()+start.Minute()+start.Second(), "genesis should be on a UTC midnight")
+	// On an exact UTC hour, not necessarily midnight: the ceremony time is a
+	// launch decision (gnoland-1 goes out at 12:00 UTC) and §132 says nothing
+	// about the hour. The check is still here to catch the fat-fingered digit
+	// it was written for — a stray minute or second would fail it.
+	assert.Equal(t, 0, start.Minute()+start.Second(), "genesis should be on an exact UTC hour")
 	assert.True(t, end.After(start))
 }
