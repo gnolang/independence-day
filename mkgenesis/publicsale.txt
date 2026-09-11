@@ -1,20 +1,21 @@
 # Public token sale — genesis balances.
 #
 # The Sonar public sale, Ethereum mainnet, contract
-# 0x959f2ceE7B6C2095d228692eCb2E4744f2D3fDb4. Settlement snapshot 2026-09-09,
-# `address_bindings` max id 68. The full 122-wallet settlement, including the
-# wallets that are NOT in this file, is committed immutably at
-# ../inputs/publicsale-sonar-2026-09-09.csv; how the amounts were derived is in
+# 0x959f2ceE7B6C2095d228692eCb2E4744f2D3fDb4. Bindings extract ending at
+# `address_bindings` id 79, newest binding 2026-09-11T04:45:17.459Z, taken
+# 2026-09-11T06:32Z. The full 122-wallet settlement, including the wallets that are NOT
+# in this file, is committed immutably at
+# ../inputs/publicsale-sonar-2026-09-11.csv; how the amounts were derived is in
 # ../inputs/README-publicsale-provenance.md.
 #
 # WHAT IS IN HERE
 #
-#   67 rows  12,266,287.839945 GNOT  participants who had named a gno.land
+#   78 rows  16,521,530.801184 GNOT  participants who had named a gno.land
 #                                    address at the snapshot
-#    1 row    9,338,399.590158 GNOT  the [sale-unclaimed] 2-of-4 multisig, for
-#                                    the 55 who had not
+#    1 row    5,083,156.628919 GNOT  the [sale-unclaimed] 2-of-4 multisig, for
+#                                    the 44 who had not
 #   -------------------------------------------------
-#   68 rows  21,604,687.430103 GNOT  = the whole settled sale
+#   79 rows  21,604,687.430103 GNOT  = the whole settled sale
 #
 # The total must equal TOTAL_PUBLIC_SALE_UGNOT in
 # allocate/process_consolidated.go — TestPublicSaleMatchesFile enforces it. The
@@ -32,9 +33,9 @@
 # Anyone binding after the snapshot falls in the multisig share. If genesis
 # slips, re-extract and rebuild.
 #
-# 25 OF THE 67 ALSO HOLD AN AIRDROP ENTITLEMENT
+# 26 OF THE 78 ALSO HOLD AN AIRDROP ENTITLEMENT
 #
-# They appear both here and in allocate/genbalance.txt.gz, for 315,720.117148
+# They appear both here and in allocate/genbalance.txt.gz, for 675,669.367465
 # GNOT of airdrop between them. This is expected — the sale audience overlaps
 # the Cosmos Hub / AtomOne one, and a gno address is the same 20-byte key as the
 # cosmos address it was derived from. mkgenesis/build.go's accumulate() SUMS
@@ -47,7 +48,7 @@
 #
 # Sale allocations are lockup-free and fully liquid at genesis, so they carry no
 # §132 schedule. mkgenesis knows a row came from this file and subtracts it from
-# the amount the common schedule is computed over — which is what makes the 25
+# the amount the common schedule is computed over — which is what makes the 26
 # overlapping rows come out right: their AIRDROP portion still vests, their sale
 # portion does not.
 #
@@ -57,7 +58,7 @@
 # portion only, since the restriction attaches to what was purchased and not to
 # that address's airdrop.
 #
-# That address is one of the 25, and one address carries at most one schedule —
+# That address is one of the 26, and one address carries at most one schedule —
 # so the declared cliff REPLACES the common §132 schedule rather than stacking
 # with it, and its 1,995.215082 GNOT of airdrop ends up unscheduled. The
 # alternative is to express nothing at all, which is worse.
@@ -68,6 +69,8 @@
 # prints a loud warning when it drops a declared schedule, because with the
 # schedule dropped the restriction has to be honoured by hand instead.
 #
+g10gjvutg825d5yqp32ej3qc25hddhtthzspwaap=3031007752ugnot
+g10x3w7fngeecx3jaq45gslypwnkalx0d9kl756g=2063565891ugnot
 g1279zrl88kuzjz5u8huzmulky9e3akqwaz0dt8e=3255813954ugnot
 g12sqtlpu4ga0an2wny80v975y8dgajelrvyp2pe=14550387598ugnot
 g12uucufc8g0vhqx92u6sjuyslx2vz97k0mhq6jd=18604651162ugnot
@@ -82,12 +85,15 @@ g16negggxcs5ad93z6f2tvpfnyz6nnydsktslp08=186046511627ugnot
 g16wg82skmtjvey8fr9ega27cvhux2wtmh7nnae9=1722480620ugnot
 g16wk2gntl7vma7qdt9zjt85xewfcer4rg3wpwd2=12706976744ugnot
 g173q2lr9gft7p6q2rs8nue7j7frfqdr4t32h5zj=1705426357ugnot
+g1747t5m2f08plqjlrjk2q0qld7465hxz8gkx59c=21897674419ugnot
+g174ts84rks5x97pk2kxnfjmmaenmj6azjua9kg7=10829457364ugnot
 g178gkc44jq4zyjgy2ssttn5jpzxjreltzxqg6k9=239641860466ugnot
 g18c0grhdx96lw2u5t9qchl390n5weu9znkwf5vm=1841860465ugnot;vesting=1841860465ugnot,0,1820534400;type=delayed
 g18kes28qn3nz9kmlluqvpvc85999d98cenyly47=36899224807ugnot
 g18u7yz0gm3y0gaqnwgw788e2e7qc4k2stz4tgq9=18604651162ugnot
 g19vtc43w5tzf3k87uvy78rtvatxc8x29xven3hs=3720930233ugnot
 g1aq4j6gz0tcj039nn74pdfefgksnqlld0znr4kd=1782945737ugnot
+g1at2h7kdhz2m9lv6azn54mwu4wl95k94wu90uwj=5525581395ugnot
 g1aycf3z9pes3dd64pg2rzpmlfpj38tu3f370z5m=46609302325ugnot
 g1ayy8knfdhepp2rws2m8kq5jzjm67fsyl363kch=42232558139ugnot
 g1c3th4jzxrmpdn23xv4taewf064jvpsrpl205ru=140077519380ugnot
@@ -100,11 +106,15 @@ g1duskj02k4fh7gll2a0vef4xl22sty4u8ky93xe=3722697674ugnot
 g1e3ded8a735au6z2845rvaqhnh42796xcesg09k=3565891473ugnot
 g1ee57d33pcjdcwd0q09kxx6m74parvmg7na9l63=11227906976ugnot
 g1eefgyzuf473pa57260h6s3cuxwd43zf5p4yw3y=5581395350ugnot
+g1f95dmun7ldnyzymrja6qjy063nfug0kzr63l7c=755367441861ugnot
 g1flu5w6ky2kxa9r5j3kuy2wxn0e2x3zkpr8mw0l=58498449612ugnot
 g1h28spejsk5glykd7e54c2mzrnc8hqjhf6whnea=1889922481ugnot
 g1hfddsq82tawt6df4eejn0sh2d73v0ac8thdgaj=18604651162ugnot
+g1hk900ewcwc9wfkn5ryc5t3ucjrupx7uhufraxa=2739572093023ugnot
 g1hpgfqn2ksz40ss70kt4y8lrqd5zgv4n29tyfd4=25155038759ugnot
 g1k226pr4ezdupppfx9x55erlxsveygvwm5vyu5l=930232558139ugnot
+g1kdyd4tvl0ced64pv0te66p52uhrp9z75u870v4=5655364341ugnot
+g1lpp5uuxkdteg5w3gvv0uyzt20w398lsrpr35l8=341068217054ugnot
 g1lsk2ve47zl7260zefryx2842f5fesgvwss2xw0=8902325582ugnot
 g1me5pu82zl5pfgt3g0t7wznvzqgycx76udsrw8j=1782945737ugnot
 g1mftyvps4cgcwygwg2jat6vcadscpe83t7e6cjf=34108527132ugnot
@@ -119,8 +129,10 @@ g1pgau0y96k6y2j2493rmq0f290vwj8ekxl2uamy=126201550388ugnot
 g1pp6rhcqgeag6vd5swugznclk49284kxuhx6qq6=3032558139ugnot
 g1q4gm7fpmtjur2659mvnh7cavk5uz9mx30dpu8q=23125581395ugnot
 g1qenjcqhqctxcdjrtjgnf6sewgjs74f4xtvmqe0=18660465117ugnot
+g1quy52dmn6ggckveyxxngw8khkycq6atm6f4tr5=184186046512ugnot
 g1r44nngjxzwan22t0s7ta3lp4amn756aksyd8tn=23722480620ugnot
 g1ruk4r4k87e08mz6z5jd3g698yhak5ygc3yjvvn=9302325581ugnot
+g1s5uydewcz2sch8ev5qr0u2fhhe5mkrlpdg2km4=186046511627ugnot
 g1sdaa2huuc9xph7033la63k6l7w4zazfde8ll5g=23313178295ugnot
 g1sn2hpzc7d3jq74d5ctsp402qeqvjs4qxrwxknm=62702486456ugnot
 g1syeqptfl0p0g6rqaw6g6erq03u8fn2vlhc4wqm=1782945737ugnot
@@ -136,8 +148,8 @@ g1z89utvygweg5l56fsk8ak7t6hh88fd0a8kdeyv=170542635659ugnot
 g1zdqp8z0rlc340rfc7g4dpdr0sspylat5gug9ch=24301550388ugnot
 g1zlk4m02g52vq387lhf9tdcjuu4t2sffuajkdut=13693023256ugnot
 
-# The 55 who had not bound at the snapshot — gnolang/multisigs [sale-unclaimed],
+# The 44 who had not bound at the snapshot — gnolang/multisigs [sale-unclaimed],
 # 2-of-4 over alexis, dongwon, jaekwon, moul. A holding account, not a treasury:
 # every ugnot in it is already owed to a named buyer, the balance only ever goes
 # down, and it is expected to reach zero.
-g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0=9338399590158ugnot
+g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0=5083156628919ugnot

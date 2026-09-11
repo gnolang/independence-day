@@ -13,9 +13,10 @@ policy/ibc-escrow-addresses.txt     ─┤  (loaded; its skip is currently disab
 allocate/genbalance.txt.gz        3,262,351 rows
         │
         ├── mkgenesis/non-airdrop.txt      75 rows,   489,000 GNOT
-        ├── mkgenesis/publicsale.txt       68 rows, 21,604,687.430103 GNOT
+        ├── mkgenesis/publicsale.txt       79 rows, 21,604,687.430103 GNOT
+        ├── mkgenesis/investors.txt         9 rows, 16,076,470 GNOT
         ▼  cd mkgenesis && make            (concatenate, sum duplicates, sort desc)
-mkgenesis/balances.txt.gz         3,262,454 rows
+mkgenesis/balances.txt.gz         3,262,473 rows
         │
         ▼  fetched by raw URL
 gnolang/gno  misc/deployments/gnoland1/gen-genesis.sh
@@ -99,17 +100,17 @@ from drifting apart.
 
 | Group | Rows | GNOT |
 |---|---:|---:|
-| participants who named a gno.land address | 67 | 12,266,287.839945 |
-| `[sale-unclaimed]` 2-of-4 multisig, for the 55 who had not | 1 | 9,338,399.590158 |
-| **Total** | **68** | **21,604,687.430103** |
+| participants who named a gno.land address | 78 | 16,521,530.801184 |
+| `[sale-unclaimed]` 2-of-4 multisig, for the 44 who had not | 1 | 5,083,156.628919 |
+| **Total** | **79** | **21,604,687.430103** |
 
 Three things that matter:
 
-- **25 of the 67 also hold an airdrop entitlement** at the same address, 315,720.117148 GNOT between
+- **26 of the 78 also hold an airdrop entitlement** at the same address, 675,669.367465 GNOT between
   them, and `accumulate()` sums the two. That is the intended treatment — the airdrop is for holding
   ATOM/ATONE at the 2022/2024 snapshots, the sale entitlement is for paying USD in 2026 — but it is
   invisible in the output, so `TestPublicSaleOverlapIsSummed` pins the set.
-- **Sale allocations do not vest**, and those 25 rows are why that cannot be expressed as an exempt
+- **Sale allocations do not vest**, and those 26 rows are why that cannot be expressed as an exempt
   list: exempting the address would let its airdrop ride free too. `entry.unlocked` records how much
   of a row is liquid at genesis and the §132 schedule is computed over the remainder, which is right
   on both halves.
@@ -118,6 +119,33 @@ Three things that matter:
   stacking with it, and its airdrop portion ends up unscheduled. It is 1,995.215082 GNOT and the
   alternative is to express nothing at all. See
   [`../inputs/README-publicsale-provenance.md`](../inputs/README-publicsale-provenance.md).
+
+---
+
+## The investor and partner distributions
+
+`mkgenesis/investors.txt` is the third hand-written source and the second carve-out of the same §136
+tranche, so the sale paragraph above applies to it verbatim: `TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT` is
+subtracted from the tranche before it is written, and `TestInvestorDistributionsMatchFile` keeps the
+constant and the file in step. **9 rows, 16,076,470 GNOT.** None of the nine overlaps any other sheet
+or the airdrop, so all nine are new rows in the output.
+
+The three §136 lines close exactly, which is the property that makes both carve-outs a re-shaping
+rather than a reallocation — `TestTheThreeSection136LinesSumToTheTranche`:
+
+```
+112,318,842.569897   INVESTORS_UNLOCKED_ADDRESS
+ 21,604,687.430103   public sale     (79 rows)
+ 16,076,470.000000   distributions   ( 9 rows)
+--------------------
+150,000,000.000000   = §136 exactly
+```
+
+The counterparties are **not named** — in the sheet, in this file, or anywhere in the repository. The
+rows carry opaque labels and are ordered by address so that neither the label nor the ordering
+carries information, and `TestInvestorDistributionsMatchFile` asserts that row *shape* rather than a
+blocklist of names, since a blocklist would publish the very list it protects. The amounts are public
+whatever we do; what is withheld is which counterparty each row belongs to.
 
 ---
 
