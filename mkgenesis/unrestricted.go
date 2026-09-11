@@ -31,8 +31,9 @@ import (
 // The public-sale rows are read from publicsale.txt rather than restated, so a
 // participant who binds an address after the last build cannot be silently
 // omitted: the row appears in both files or in neither.
-// addrRE is the canonical bech32 gno address shape, as used by the balance
-// sheet validators in allocate/.
+// addrRE is the canonical bech32 gno address SHAPE. It is a cheap pre-filter,
+// not the validation: a transposed character keeps the shape and breaks only the
+// checksum, so every address that matches here is also decoded by checkAddr.
 var addrRE = regexp.MustCompile(`^g1[0-9a-z]{38}$`)
 
 const (
@@ -152,6 +153,9 @@ func readAddresses(path string) ([]string, error) {
 		addr = strings.TrimSpace(addr)
 		if !addrRE.MatchString(addr) {
 			return nil, fmt.Errorf("%s: malformed row %q", path, line)
+		}
+		if err := checkAddr(addr); err != nil {
+			return nil, fmt.Errorf("%s: %w", path, err)
 		}
 		seen[addr] = true
 	}

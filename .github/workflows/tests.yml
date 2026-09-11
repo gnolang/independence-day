@@ -40,5 +40,17 @@ jobs:
           go run . | tee /tmp/crosscheck.log
           grep -q 'Balance files match.' /tmp/crosscheck.log
 
+      # The artifacts are a published contract — balances.txt.gz is fetched by
+      # raw URL from outside this repository — so their bytes are pinned, not
+      # merely printed. `make supply` below reports the same hashes, but a
+      # report cannot fail; this can.
+      #
+      # It is also the only check that sees the gzip CONTAINER. The golden test
+      # decompresses before comparing, so a rebuild with a non-GNU gzip (macOS
+      # ships "Apple gzip", which writes a different deflate stream) produces a
+      # different published file that every other check calls identical.
+      - name: Verify committed artifact checksums
+        run: make checksums
+
       - name: Report supply totals
         run: make supply

@@ -9,6 +9,25 @@ import (
 	"testing"
 )
 
+// Valid bech32 test addresses, shared across this package's tests.
+//
+// The hand-written sheet readers now decode every address, so the old
+// placeholders ("g1aaa", "g1shared", …) no longer parse — which is precisely
+// the point of the check. These are real 20-byte payloads (0x11…, 0x22…, 0x33…
+// repeated) with correct checksums: they exercise the happy path without naming
+// a real counterparty, and they stay recognisable in failure output.
+const (
+	testAddr1 = "g1zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3jptpnt" // 0x11 × 20
+	testAddr2 = "g1yg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zauw8mu" // 0x22 × 20
+	testAddr3 = "g1xvenxvenxvenxvenxvenxvenxvenxven0ze6ww" // 0x33 × 20
+
+	// testAddr1 with its first two payload characters transposed: same shape,
+	// same length, broken checksum. This is the mistake the shape regex could
+	// not see — and the realistic one, since counterparty addresses arrive by
+	// email and get pasted in by hand.
+	testAddrTransposed = "g1yzg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3jptpnt"
+)
+
 func TestParseRow(t *testing.T) {
 	t.Parallel()
 
@@ -51,20 +70,19 @@ func TestSecondColonField(t *testing.T) {
 func TestReadPremineStripsComments(t *testing.T) {
 	t.Parallel()
 
-	path := writeTemp(t, "non-airdrop.txt", `# a leading comment
-
-g1aaa=100ugnot
-
-g1bbb=200ugnot # an inline comment
-# g1ccc=300ugnot
-`)
+	path := writeTemp(t, "non-airdrop.txt", "# a leading comment\n"+
+		"\n"+
+		testAddr1+"=100ugnot\n"+
+		"\n"+
+		testAddr2+"=200ugnot # an inline comment\n"+
+		"# "+testAddr3+"=300ugnot\n")
 
 	totals := map[string]entry{}
 	if err := readPremine(path, totals); err != nil {
 		t.Fatalf("readPremine: %v", err)
 	}
 
-	want := map[string]entry{"g1aaa": {amount: 100}, "g1bbb": {amount: 200}}
+	want := map[string]entry{testAddr1: {amount: 100}, testAddr2: {amount: 200}}
 	if !reflect.DeepEqual(totals, want) {
 		t.Fatalf("got %v, want %v", totals, want)
 	}
@@ -73,7 +91,8 @@ g1bbb=200ugnot # an inline comment
 func TestAccumulateSumsDuplicateAddresses(t *testing.T) {
 	t.Parallel()
 
-	premine := writeTemp(t, "non-airdrop.txt", "g1shared=100ugnot\ng1only=1ugnot\n")
+	premine := writeTemp(t, "non-airdrop.txt",
+		testAddr1+"=100ugnot\n"+testAddr2+"=1ugnot\n")
 
 	totals := map[string]entry{}
 	if err := readPremine(premine, totals); err != nil {
@@ -81,15 +100,86 @@ func TestAccumulateSumsDuplicateAddresses(t *testing.T) {
 	}
 	// The same address arriving from the airdrop must be added, not replaced —
 	// unlike LeftMerge on the consuming side, which is last-write-wins.
-	if err := accumulate(strings.NewReader("src:g1shared=25ugnot\n"), "genbalance", totals, secondColonField, false); err != nil {
+	if err := accumulate(strings.NewReader("src:"+testAddr1+"=25ugnot\n"),
+		"genbalance", totals, secondColonField, false /*unlocked*/, false /*validateAddrs*/); err != nil {
 		t.Fatalf("accumulate: %v", err)
 	}
 
-	if totals["g1shared"].amount != 125 {
-		t.Fatalf("g1shared = %d, want 125 (100 premine + 25 airdrop)", totals["g1shared"].amount)
+	if totals[testAddr1].amount != 125 {
+		t.Fatalf("shared = %d, want 125 (100 premine + 25 airdrop)", totals[testAddr1].amount)
 	}
-	if totals["g1only"].amount != 1 {
-		t.Fatalf("g1only = %d, want 1", totals["g1only"].amount)
+	if totals[testAddr2].amount != 1 {
+		t.Fatalf("only = %d, want 1", totals[testAddr2].amount)
+	}
+}
+
+// TestHandWrittenSheetsRejectInvalidAddresses is the regression test for the
+// gap this check closes: a transposed character in a counterparty address used
+// to survive every check in this repository and land in the shipped genesis.
+//
+// It was caught eventually — gnoland's Balance.Parse decodes bech32 when the
+// genesis is assembled — but "eventually" meant at the genesis ceremony rather
+// than in CI, seconds after the paste.
+func TestHandWrittenSheetsRejectInvalidAddresses(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		read func(string, map[string]entry) error
+	}{
+		{"non-airdrop.txt", readPremine},
+		{"publicsale.txt", readPublicSale},
+	} {
+		tc := tc // go.mod says go 1.17: loop variables are shared across iterations
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			path := writeTemp(t, tc.name, testAddrTransposed+"=100ugnot\n")
+			err := tc.read(path, map[string]entry{})
+			if err == nil {
+				t.Fatal("a checksum-invalid address was accepted")
+			}
+			if !strings.Contains(err.Error(), "not valid bech32") {
+				t.Fatalf("error does not name the cause: %v", err)
+			}
+		})
+	}
+}
+
+// TestHandWrittenSheetsRejectNonCanonicalAddresses covers the other half of
+// checkAddr: an address that decodes to the right 20 bytes but is spelled in a
+// foreign HRP. Consumers compare these as strings, so a `cosmos1…` spelling of
+// the correct key is still the wrong row.
+func TestHandWrittenSheetsRejectNonCanonicalAddresses(t *testing.T) {
+	t.Parallel()
+
+	// testAddr1's 20 bytes, encoded with the cosmos HRP.
+	const cosmosForm = "cosmos1zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3pahzj0"
+
+	path := writeTemp(t, "non-airdrop.txt", cosmosForm+"=100ugnot\n")
+	err := readPremine(path, map[string]entry{})
+	if err == nil {
+		t.Fatal("a non-canonical address was accepted")
+	}
+	if !strings.Contains(err.Error(), "canonical g1 form") {
+		t.Fatalf("error does not name the cause: %v", err)
+	}
+}
+
+// TestGenbalanceIsNotRevalidated documents the deliberate asymmetry in
+// accumulate: genbalance's 3.26M rows are produced by allocate's addrKey and
+// decoding them again costs ~3.4s on every build. The shipped artifact is still
+// decoded in full, once, by allocate's TestGenesisFileTotal.
+func TestGenbalanceIsNotRevalidated(t *testing.T) {
+	t.Parallel()
+
+	totals := map[string]entry{}
+	if err := accumulate(strings.NewReader("src:"+testAddrTransposed+"=1ugnot\n"),
+		"genbalance", totals, secondColonField, false /*unlocked*/, false /*validateAddrs*/); err != nil {
+		t.Fatalf("genbalance rows must not be revalidated here: %v", err)
+	}
+	if totals[testAddrTransposed].amount != 1 {
+		t.Fatal("row was dropped")
 	}
 }
 

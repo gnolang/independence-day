@@ -388,6 +388,17 @@ func TestGenesisFileTotal(t *testing.T) {
 		// balance, so counting it would double-count that row against the cap.
 		balance, _, _ := strings.Cut(line, ";")
 		addr, amount, _ := strings.Cut(balance, "=")
+
+		// The regex above checks the SHAPE. Decode the address too: a transposed
+		// character preserves the shape and breaks only the bech32 checksum, so
+		// the shape check alone would pass an address nobody controls straight
+		// into the shipped artifact. This is the one place the whole sheet is
+		// decoded — mkgenesis deliberately skips it on the 3.26M-row hot path,
+		// because doing it on every build costs ~3.4s.
+		key, err := addrKey(addr)
+		require.NoErrorf(t, err, "row %d: %q", rows, line)
+		require.Equalf(t, addr, key, "row %d: address is not in canonical g1 form: %q", rows, line)
+
 		if _, dup := seen[addr]; dup {
 			t.Fatalf("duplicate address %s", addr)
 		}
