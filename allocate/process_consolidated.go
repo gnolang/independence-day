@@ -107,6 +107,33 @@ const (
 	// TestFoundersBudgetMatchesSkipList keeps this in step with the skip list.
 	TOTAL_AIRDROP_GOVDAO_FOUNDERS = 6000
 
+	// --- The founding validator set: a gas float, not a reward -------------
+	//
+	// gnolang/gno's mainnet builder (misc/deployments/mainnet.gno.land) seeds
+	// four founding validators, each as a (signing address, operator address)
+	// pair. `gnogenesis fork valoper-seed` REQUIRES the two to be distinct, so
+	// that compromising a signing key does not collapse into control of the
+	// validator slot. That makes eight addresses, not four.
+	//
+	// Every management action on a validator is a PAID transaction: rotating the
+	// signing key, editing the valoper profile in r/gnops/valopers, signalling
+	// opt-out through r/sys/validators. There is no mainnet faucet, and §126
+	// locks ugnot transfers to the §127 exemption list -- so an address that
+	// lands at zero can never be funded afterwards and can never act. Six of the
+	// eight held nothing at all; see gnolang/gno's INITIAL_VALSET_OPERATORS
+	// TODO(mainnet), which is what this closes.
+	//
+	// 1,000 GNOT each, the same tier as the founders grant above and the multisig
+	// signer float in mkgenesis/non-airdrop.txt. It is a float so a genesis
+	// validator can ACT, not a payment for validating -- block rewards are not a
+	// genesis matter.
+	//
+	// TestGenesisValidatorFloatMatchesSkipList keeps the budget in step with the
+	// skip list; TestGenesisValidatorsAreFunded asserts the end state on the
+	// shipped sheet, including the two funded from elsewhere.
+	GENESIS_VALIDATOR_FLOAT       = 1000
+	TOTAL_GENESIS_VALIDATOR_FLOAT = 6 * GENESIS_VALIDATOR_FLOAT
+
 	// --- Constitution §120-122: three treasuries, three addresses -----------
 	//
 	// These used to be one undifferentiated TOTAL_AIRDROP_CONTRIBS line paid to
@@ -143,10 +170,18 @@ const (
 	// can accommodate — was removed on 2026-09-09. There is no mainnet faucet.
 	PREMINE_CHARGED_TO_ECOSYSTEM = PREMINE_ABSORBED_FROM_CONTRIBS
 
+	// §122 names the Validator Services Treasury, and a gas float that exists
+	// solely so a founding validator can rotate its key, edit its profile or
+	// opt out IS a validator service -- so the float is charged THERE. The two
+	// alternatives both fail §226's purpose test: §346 restricts Ecosystem to
+	// "contributors whose real human identity is known and recorded", which is
+	// the clause that removed the faucet, and Core already carries the founders.
+	VALIDATOR_FLOAT_CHARGED_TO_VALIDATOR = TOTAL_GENESIS_VALIDATOR_FLOAT
+
 	// Net amounts written to the three treasury addresses.
 	TOTAL_TREASURY_CORE_NET      = TOTAL_TREASURY_CORE - FOUNDERS_CHARGED_TO_CORE
 	TOTAL_TREASURY_ECOSYSTEM_NET = TOTAL_TREASURY_ECOSYSTEM - PREMINE_CHARGED_TO_ECOSYSTEM
-	TOTAL_TREASURY_VALIDATOR_NET = TOTAL_TREASURY_VALIDATOR
+	TOTAL_TREASURY_VALIDATOR_NET = TOTAL_TREASURY_VALIDATOR - VALIDATOR_FLOAT_CHARGED_TO_VALIDATOR
 
 	// --- Constitution §123-124 + §136-138: Investors and NT,LLC -------------
 	//
@@ -331,6 +366,20 @@ func main() {
 		assign(totalDist, addr, TOTAL_AIRDROP_GOVDAO_FOUNDERS/eligibleFounders)
 	}
 
+	// Allocate the founding validator set's gas float (§122). Unlike the founders
+	// budget this is a flat per-address amount rather than a budget divided by the
+	// eligible count: skipping an address that is already funded must leave every
+	// other slot at exactly 1,000 GNOT, and the skipped 1,000 simply stays in the
+	// Validator Services Treasury -- the same shape as Jae's skipped founders
+	// grant staying in Core.
+	for _, addr := range genesisValidators {
+		if reason, skipped := genesisValidatorsSkipped[addr]; skipped {
+			fmt.Printf("skipping genesis validator float for %s: %s\n", addr, reason)
+			continue
+		}
+		assign(totalDist, addr, GENESIS_VALIDATOR_FLOAT)
+	}
+
 	// Create gzipped file
 	outputFile, err := os.Create(outputFile)
 	if err != nil {
@@ -369,6 +418,52 @@ var aibCosmosAddrs = []string{
 	"cosmos12n3pqter204ks5mfzdtsz0hv2tr9cqmegnkc8r",
 	"cosmos1pu9ssyptk3fym7hawerv5tnfqenr3c0d92hl7a",
 	"cosmos1cxt79zavgr9qvqfx9hjsr9aqvpx7ftan8heqc6",
+}
+
+// genesisValidators is the founding validator set of gnoland-1, as
+// (signing address, operator address) pairs, transcribed from INITIAL_VALSET
+// and INITIAL_VALSET_OPERATORS in gnolang/gno's
+// misc/deployments/mainnet.gno.land/gen-genesis.sh.
+//
+// Both halves of each pair are here on purpose. The operator is the management
+// plane — it rotates the signing key, edits the valoper profile and signals
+// opt-out — and is the address that would otherwise land at zero and be stuck
+// there. The signing address is funded too, at the same tier, so that a
+// validator slot is never inert for want of gas on whichever of its two keys is
+// at hand; `fork valoper-seed` forces the two to be distinct precisely because
+// they are held differently (the signing key lives in tmkms/horcrux/an HSM), so
+// funding only one of them leaves a hole that §126 makes permanent.
+//
+// The four power-60 slots are Gnocore, OnBloc, Samourai Crew and Berty. This
+// list is a MIRROR of gnolang/gno's: if the valset changes there, it changes
+// here, and the gas float follows the set that actually launches the chain.
+var genesisValidators = []string{
+	"g1mmgvcssjw6x4fzphupfg6mtxqt36v000c5rf2a", // gno-core-validator-1 (signing)
+	"g1aeddlftlfk27ret5rf750d7w5dume3kcsm8r8m", // gno-core-validator-1 operator (aeddi)
+	"g1hqhetnnz0raw5hps6yxexl7q09a6f8w3anlptt", // onbloc-validator-1 (signing)
+	"g12gtvlcexzgax49nvvkvhp2u0v6eejhunq0074p", // onbloc-validator-1 operator
+	"g15t7f9q6km3ldt885duwl8xu5dncs98528amk4f", // samourai-crew-validator-1 (signing)
+	"g1n9y62agq998jt8w59az60xcqlftjknjg2grhn4", // samourai-crew-validator-1 operator
+	"g1l983yy3kpmapyzcfy53y5charfxupa5czjalea", // berty-validator-1 (signing)
+	"g1qynsu9dwj9lq0m5fkje7jh6qy3md80ztqnshhm", // berty-validator-1 operator
+}
+
+// genesisValidatorsSkipped lists the genesis validator addresses that do NOT
+// receive the §122 gas float, because they are already funded to at least
+// GENESIS_VALIDATOR_FLOAT from another line in this genesis. Funding them again
+// would sum (aeddi would panic in assign(); the Berty operator would quietly
+// become 2,000 GNOT via mkgenesis's accumulate()) and would make "why is this
+// one different?" unanswerable from the sheet.
+//
+// The rule is one line: skip a genesis validator address that already holds at
+// least 1,000 GNOT, and leave the 1,000 it does not receive in the Validator
+// Services Treasury — exactly what Jae's skipped founders grant does in Core.
+// TestGenesisValidatorsAreFunded asserts the END STATE for all eight addresses
+// on the shipped sheet, so a skip whose other funding line disappears fails
+// here rather than at launch.
+var genesisValidatorsSkipped = map[string]string{
+	"g1aeddlftlfk27ret5rf750d7w5dume3kcsm8r8m": "gno-core operator (aeddi) - already holds the 1,000 GNOT govdaoFounders grant",
+	"g1qynsu9dwj9lq0m5fkje7jh6qy3md80ztqnshhm": "berty operator - already holds the 1,000 GNOT multisig signer float in mkgenesis/non-airdrop.txt",
 }
 
 var govdaoFounders = []string{
@@ -449,12 +544,23 @@ func assignUgnot(dist map[string]Distribution, addr string, ugnot int64) {
 // otherwise be discovered by whatever consumes the output — or, worse, not be
 // discovered, since nothing downstream asserts the address format.
 func validateHardcodedAddresses() {
-	seen := make(map[string]string, len(govdaoFounders)+7)
+	seen := make(map[string]string, len(govdaoFounders)+len(genesisValidators)+7)
 
-	check := func(addr, role string) {
+	// format checks the address itself. Used alone for entries that are listed
+	// but not paid — a skipped genesis validator is funded by another role, and
+	// that role legitimately owns the address.
+	format := func(addr, role string) {
 		if _, err := addrKey(addr); err != nil {
 			panic(fmt.Errorf("%s: invalid address %q: %w", role, addr, err))
 		}
+	}
+
+	// check is format plus "no address is paid twice". Two fixed allocations on
+	// one address is always a mistake: assign() would panic if both landed in the
+	// distribution, and where it would not (a row added in mkgenesis) the two
+	// would silently sum.
+	check := func(addr, role string) {
+		format(addr, role)
 		if prev, dup := seen[addr]; dup {
 			panic(fmt.Errorf("address %s is used for both %s and %s", addr, prev, role))
 		}
@@ -470,6 +576,29 @@ func validateHardcodedAddresses() {
 	check(MULTISIG_NT2_ADDRESS, "MULTISIG_NT2_ADDRESS")
 	for i, addr := range govdaoFounders {
 		check(addr, fmt.Sprintf("govdaoFounders[%d]", i))
+	}
+
+	// The validator set is its own namespace first — a duplicated slot there is a
+	// transcription error in the mirrored valset, and it must be caught even when
+	// both copies are skipped.
+	valseen := make(map[string]string, len(genesisValidators))
+	for i, addr := range genesisValidators {
+		role := fmt.Sprintf("genesisValidators[%d]", i)
+		format(addr, role)
+		if prev, dup := valseen[addr]; dup {
+			panic(fmt.Errorf("address %s appears twice in the genesis valset, as %s and %s", addr, prev, role))
+		}
+		valseen[addr] = role
+
+		if _, skipped := genesisValidatorsSkipped[addr]; skipped {
+			continue // paid by another role, which already owns the slot in `seen`
+		}
+		check(addr, role)
+	}
+	for addr := range genesisValidatorsSkipped {
+		if _, ok := valseen[addr]; !ok {
+			panic(fmt.Errorf("genesisValidatorsSkipped lists %s, which is not in genesisValidators", addr))
+		}
 	}
 }
 

@@ -8,7 +8,7 @@ regenerate this file with `cd allocate && go run . readme`.
 
 ## rows
 ```
-3262351 genbalance.txt.gz
+3262357 genbalance.txt.gz
 ```
 
 ## sum
@@ -26,8 +26,8 @@ the breakdown of the output by origin chain.
 |---|---:|
 | `atone1…` | 2602221 |
 | `cosmos1…` | 660117 |
-| `g1…` | 13 |
-| **total** | **3262351** |
+| `g1…` | 19 |
+| **total** | **3262357** |
 
 ## sample rows
 
@@ -39,21 +39,28 @@ cosmos100000aeu2lh0jrrnmn2npc88typ25u7td9wqxv:g100000aeu2lh0jrrnmn2npc88typ25u7t
 g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq:g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq=1000000000ugnot
 ```
 
-## the 13 synthetic rows
+## the 19 synthetic rows
 
 Rows whose source is a `g1…` address are assigned by `process_consolidated.go`
-rather than derived from a snapshot: the purpose-bound buckets and the founders.
+rather than derived from a snapshot: the purpose-bound buckets, the founders
+and the founding validator set's gas float.
 They are listed in full because they are the rows a reviewer must check by eye.
 
 ```
 g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq:g127l4gkhk0emwsx5tmxe96sp86c05h8vg5tufzq=1000000000ugnot
+g12gtvlcexzgax49nvvkvhp2u0v6eejhunq0074p:g12gtvlcexzgax49nvvkvhp2u0v6eejhunq0074p=1000000000ugnot
+g15t7f9q6km3ldt885duwl8xu5dncs98528amk4f:g15t7f9q6km3ldt885duwl8xu5dncs98528amk4f=1000000000ugnot
 g1aeddlftlfk27ret5rf750d7w5dume3kcsm8r8m:g1aeddlftlfk27ret5rf750d7w5dume3kcsm8r8m=1000000000ugnot
 g1e6gxg5tvc55mwsn7t7dymmlasratv7mkv0rap2:g1e6gxg5tvc55mwsn7t7dymmlasratv7mkv0rap2=1000000000ugnot
 g1gzhj234kpajz963z5vf42j4ylddscnkez2wvly:g1gzhj234kpajz963z5vf42j4ylddscnkez2wvly=1000000000ugnot
+g1hqhetnnz0raw5hps6yxexl7q09a6f8w3anlptt:g1hqhetnnz0raw5hps6yxexl7q09a6f8w3anlptt=1000000000ugnot
 g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76:g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76=112318842569897ugnot
-g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p:g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p=20000000000000ugnot
+g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p:g1kj5ag4xdjws00rfzg49x6lljv34pty5uchcq2p=19994000000000ugnot
+g1l983yy3kpmapyzcfy53y5charfxupa5czjalea:g1l983yy3kpmapyzcfy53y5charfxupa5czjalea=1000000000ugnot
 g1m0rgan0rla00ygmdmp55f5m0unvsvknluyg2a4:g1m0rgan0rla00ygmdmp55f5m0unvsvknluyg2a4=1000000000ugnot
 g1manfred47kzduec920z88wfr64ylksmdcedlf5:g1manfred47kzduec920z88wfr64ylksmdcedlf5=1000000000ugnot
+g1mmgvcssjw6x4fzphupfg6mtxqt36v000c5rf2a:g1mmgvcssjw6x4fzphupfg6mtxqt36v000c5rf2a=1000000000ugnot
+g1n9y62agq998jt8w59az60xcqlftjknjg2grhn4:g1n9y62agq998jt8w59az60xcqlftjknjg2grhn4=1000000000ugnot
 g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p:g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p=332000000000000ugnot
 g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9:g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9=39994000000000ugnot
 g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg:g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg=62126254516550ugnot
