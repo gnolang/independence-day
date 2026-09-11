@@ -145,6 +145,13 @@ const (
 	// with no faucet it can never be funded afterwards -- so every
 	// post-genesis submission would park forever.
 	//
+	// The second is the [govdao] 4-of-7 multisig, which gnolang/gno hardcodes
+	// as the OWNER of realms that ship in the genesis set. Funding it is not a
+	// governance grant -- GovDAO voting is paid by whoever proposes -- it is
+	// the operating float for realms whose owner cannot be changed without a
+	// realm upgrade. See chainServices for which realms and why r/sys/names is
+	// NOT the reason.
+	//
 	// 5,000 GNOT, deliberately FIVE TIMES the 1,000 tier the founders grant and
 	// the validator float sit at, because it is a different kind of spender.
 	// Those two pay for occasional management actions -- rotate a key, edit a
@@ -153,12 +160,19 @@ const (
 	// only the exemption-listed funds able to send, so the next refill waits on
 	// the transfer lock lifting or a GovDAO proposal.
 	//
-	// The number is checkable rather than conventional. gnolang/gno
-	// contribs/gpao -- the package-approver daemon that would hold this key --
-	// broadcasts one MsgEnablePackage per approval at a default gas fee of
-	// 1,000,000 ugnot, so 5,000 GNOT is ~5,000 approvals. Its own per-run
-	// max-spend bound is 100 GNOT, now a FIFTIETH of the float rather than a
-	// tenth, so a misbehaving run is even further from draining it.
+	// For the oracle the number is checkable rather than conventional.
+	// gnolang/gno contribs/gpao -- the package-approver daemon that would hold
+	// this key -- broadcasts one MsgEnablePackage per approval at a default gas
+	// fee of 1,000,000 ugnot, so 5,000 GNOT is ~5,000 approvals. Its own
+	// per-run max-spend bound is 100 GNOT, now a FIFTIETH of the float rather
+	// than a tenth, so a misbehaving run is even further from draining it.
+	//
+	// The multisig gets the same tier for the same shape of reason: it owns two
+	// realms rather than one daemon, its spend is episodic rather than per
+	// event, and the window it has to cover is the whole transfer lock -- the
+	// pinned §132 schedules run to 2028-09-11, so "until §126 lifts" is years,
+	// not weeks. At the same 1,000,000 ugnot default that is ~5,000 owner
+	// actions across both realms.
 	//
 	// Still a float, not a standing budget: topping it up is GovDAO's business
 	// once §126 lifts.
@@ -167,7 +181,7 @@ const (
 	// bucket. TestChainServicesAreFunded asserts the end state on the shipped
 	// sheet.
 	CHAIN_SERVICE_FLOAT       = 5000
-	TOTAL_CHAIN_SERVICE_FLOAT = 1 * CHAIN_SERVICE_FLOAT
+	TOTAL_CHAIN_SERVICE_FLOAT = 2 * CHAIN_SERVICE_FLOAT
 
 	// --- Constitution §120-122: three treasuries, three addresses -----------
 	//
@@ -489,15 +503,39 @@ type chainService struct {
 // holds anything from another line today, and if one ever does, assign() panics
 // and asks for a decision rather than silently summing or overwriting.
 //
-// Still UNFUNDED and not in this list: gnolang/gno's NAMES_ADMIN
-// (g1skl80c…, the [govdao] 4-of-7). It lands at zero after its genesis
-// names.Enable tx burns its funding, and any later names administration is a
-// paid tx. That is a separate decision -- the multisig is a governance body
-// rather than a service, so Core may not be its bucket.
+// The [govdao] 4-of-7 multisig was previously excluded here on the grounds that
+// a governance body is not a service and Core may not be its bucket. That was
+// reasoning from the wrong capability. The reason given was r/sys/names, and
+// r/sys/names is the one realm where the objection holds: its `admin` gates
+// Enable() and NOTHING else, Enable is a one-shot genesis call, and the realm's
+// own source says the address is "dead weight" afterwards -- pause/unpause runs
+// through a GovDAO T1 proposal (ProposeSetPaused), not through this key. Funding
+// it for names administration would indeed have been funding nothing.
+//
+// But the same address is the hardcoded OWNER of two other realms that ship in
+// the mainnet genesis set:
+//
+//	r/gnoland/blog          adminAddr      -- post, edit, moderate the official blog
+//	r/gnoland/boards2/v1    gPerms         -- realm permissions owner
+//
+// (Confirmed against gnolang/gno master with `gno tool deplist -test-dep` over
+// the mainnet FILTERED_PACKAGES. r/gnoland/home and r/demo/defi/foo20 hardcode
+// it too but do NOT reach genesis, so they are not part of this.)
+//
+// Those are ordinary paid txs, forever, and the owner is hardcoded at realm
+// source -- it cannot be reassigned without a realm upgrade. An owner that
+// lands at zero under §126 with no faucet cannot post to the chain's own blog
+// or administer its own boards, and cannot be topped up until the transfer lock
+// lifts. So this is a service float for realm operation, not a governance
+// grant: GovDAO voting is paid by whoever proposes, and that is unaffected.
 var chainServices = []chainService{
 	{
 		addr: "g1yaaa6rcp4ew5yjzdj4yms596wx2dtrj3a86704",
 		role: "inert-package approvals oracle (vm.params pkg_approvers)",
+	},
+	{
+		addr: "g1skl80cuz8zq3lul9pgz5pc35l2pfzgxgfpsqkx",
+		role: "[govdao] 4-of-7 multisig — hardcoded owner of r/gnoland/blog and r/gnoland/boards2/v1",
 	},
 }
 
