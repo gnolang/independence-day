@@ -39,16 +39,27 @@ func TestUnrestrictedNamedFundsMatchAllocate(t *testing.T) {
 }
 
 // TestUnrestrictedCoversEveryPublicSaleRow is the property that matters
-// operationally: a sale participant whose row is in the genesis but whose
-// address is not exempt receives GNOT they cannot move, and the contractual
-// position ("lockup-free") is not honoured. The list is generated FROM
-// publicsale.txt precisely so the two cannot disagree; this asserts it.
+// operationally: a §128 payee whose row is in the genesis but whose address is
+// not exempt receives GNOT they cannot move, and the contractual position
+// ("lockup-free") is not honoured. The list is generated FROM the sheets
+// precisely so the two cannot disagree; this asserts it.
+//
+// Both §136 sheets count, for the same reason. The generator tolerates a missing
+// investors.txt because the two changes landed separately — so this reads it the
+// same way, rather than pinning a total that is only right on one of the two
+// paths the generator supports.
 func TestUnrestrictedCoversEveryPublicSaleRow(t *testing.T) {
 	t.Parallel()
 
 	sale, err := readAddresses(publicSaleFileLocal)
 	require.NoError(t, err)
 	require.NotEmpty(t, sale)
+
+	investors, err := readAddresses(investorsFileLocal)
+	if os.IsNotExist(err) {
+		investors, err = nil, nil
+	}
+	require.NoError(t, err)
 
 	listed, err := readAddresses(unrestrictedFileLocal)
 	require.NoError(t, err)
@@ -60,14 +71,17 @@ func TestUnrestrictedCoversEveryPublicSaleRow(t *testing.T) {
 	for _, a := range sale {
 		assert.True(t, set[a], "public-sale address %s is not in unrestricted.txt", a)
 	}
+	for _, a := range investors {
+		assert.True(t, set[a], "distribution address %s is not in unrestricted.txt", a)
+	}
 
 	// ... and the three named funds, which are the whole point of §127.
 	for _, a := range []string{unrestrictedEcosystem, unrestrictedInvestorsUnlocked, unrestrictedInvestorsVesting} {
 		assert.True(t, set[a], "named fund %s is not in unrestricted.txt", a)
 	}
 
-	assert.Len(t, listed, len(sale)+3,
-		"unrestricted.txt should be exactly the sale rows plus the three named funds")
+	assert.Len(t, listed, len(sale)+len(investors)+3,
+		"unrestricted.txt should be exactly the two §136 sheets plus the three named funds")
 }
 
 // TestUnrestrictedIsRegenerated fails when the committed file is stale, the same
@@ -95,5 +109,6 @@ func TestUnrestrictedIsRegenerated(t *testing.T) {
 
 const (
 	publicSaleFileLocal   = "publicsale.txt"
+	investorsFileLocal    = "investors.txt"
 	unrestrictedFileLocal = "unrestricted.txt"
 )

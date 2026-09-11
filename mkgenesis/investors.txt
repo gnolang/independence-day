@@ -1,0 +1,42 @@
+# Investor and partner distributions — Constitution §136.
+#
+# Obligations already owed to named counterparties, paid at genesis out of the
+# §136 tranche: "150,000,000 tokens from the Investors allocation are unlocked
+# at the mainnet". Like the public sale, this is not an eighth bucket — it is
+# the part of that tranche that is already spoken for.
+#
+# 9 rows, 16,076,470 GNOT. INVESTORS_UNLOCKED_ADDRESS holds the tranche NET of
+# both this file and publicsale.txt, so total supply does not move. The sum must
+# equal TOTAL_INVESTOR_DISTRIBUTIONS_UGNOT in allocate/process_consolidated.go;
+# TestInvestorDistributionsMatchFile enforces it.
+#
+# LIQUID AT GENESIS, LIKE THE SALE. These come out of the §136 UNLOCKED tranche,
+# so they carry no §132 schedule. build.go marks the whole file `unlocked`.
+#
+# ALL OF THESE MUST BE WHITELISTED. At genesis $GNOT is non-transferable (§126);
+# an obligation paid into an address that cannot move it is not paid. They are
+# in mkgenesis/unrestricted.txt for exactly that reason.
+#
+# COUNTERPARTIES ARE DELIBERATELY NOT NAMED
+#
+# Several are commercial counterparties whose identity and commercial terms are
+# not ours to publish. The labels below are opaque and the rows are ordered by
+# ADDRESS, not by amount, so the ordering carries no information either.
+#
+# Be honest about what this does and does not protect: the AMOUNTS are in the
+# genesis and are therefore public no matter what, and the GNOT price at the
+# time is knowable — so anyone can convert a row back to a USD figure. What is
+# withheld is WHICH counterparty each row belongs to. If a stronger property is
+# needed, the payment has to move off the genesis sheet, not be relabelled.
+#
+# The real mapping is held privately and is not in this repository.
+
+g138f8fawcn5xuurg4x9v7a3n3zcwwhl3ekdcy7w=100000000ugnot # investor1
+g15zetuthld0er5jrm3xtx3u4ucssjvd3ylmvce3=100000000ugnot # investor2
+g1arpgqtq9q3emx6mfhuz7xuwd6qptcwynedzlk2=100000000ugnot # investor3
+g1ayzkvh7dlmkqet9ccyfgkxmeg36f2sjj82w7sm=9302326000000ugnot # investor4
+g1ct00m8t88chjcfaysafhsk9fdz43qyr9d2tccd=100000000ugnot # investor5
+g1kyav8rjkcxfmjrw9n8end8emazcxhhtauhx8eu=930233000000ugnot # investor6
+g1qv3dqyw46fut94z9t90jka58saw2e7l99nzqtr=5533333000000ugnot # investor7
+g1sm2t7za0ccyheep280ne4g2rtkz5wyj48nq3u3=310078000000ugnot # investor8
+g1vpekenc72l8d05nu5n0ym0v5za05fz80yepdpq=100000000ugnot # investor9

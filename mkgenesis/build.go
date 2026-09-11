@@ -18,12 +18,15 @@ const denom = "ugnot"
 // what vesting schedule its row ends up carrying.
 //
 // unlocked is the part of the balance that is liquid at genesis and therefore
-// NOT subject to the common §132 schedule — today that is exactly what came
-// from publicsale.txt. It is tracked per address rather than as an exempt-list
-// because 25 of the 67 sale participants ALSO hold an airdrop entitlement at
-// the same address: exempting the whole row would let their airdrop ride free,
-// and vesting the whole row would lock up a sale allocation that is contractually
-// liquid. Subtracting gives the only answer that is right on both halves.
+// NOT subject to the common §132 schedule — today that is what came from the two
+// §136 sheets, publicsale.txt and investors.txt. It is tracked per address rather
+// than as an exempt-list because 26 of the 78 sale participants ALSO hold an
+// airdrop entitlement at the same address: exempting the whole row would let
+// their airdrop ride free, and vesting the whole row would lock up a sale
+// allocation that is contractually liquid. Subtracting gives the only answer that
+// is right on both halves. (None of the nine distribution rows overlaps anything,
+// so for those the two treatments would agree — the per-address form costs
+// nothing and does not have to know which sheet a row came from.)
 //
 // schedule is a fully-formed ";vesting=…" suffix declared by an input row, for
 // the case the common schedule cannot express — a single US-accredited sale
@@ -52,6 +55,7 @@ func runBuild(args []string) error {
 	genbalance := fs.String("genbalance", "../allocate/genbalance.txt.gz", "gzipped airdrop rows, <source>:<addr>=<amount>ugnot")
 	premine := fs.String("premine", "non-airdrop.txt", "hand-written premine rows, # starts a comment")
 	publicsale := fs.String("publicsale", "publicsale.txt", "public token sale rows, unlocked at genesis; empty to skip")
+	investors := fs.String("investors", "investors.txt", "investor/partner distributions, unlocked at genesis; empty to skip")
 	out := fs.String("out", "balances.txt", "merged output")
 	vestingStart := fs.Int64("vesting-start", genesisVestingStart, "unix seconds GNOT becomes transferrable (§132)")
 	vestingEnd := fs.Int64("vesting-end", genesisVestingEnd, "unix seconds the schedule completes, start + 24 months")
@@ -85,6 +89,14 @@ func runBuild(args []string) error {
 	totals := make(map[string]entry)
 	if err := readPremine(*premine, totals); err != nil {
 		return err
+	}
+	// Same treatment as the sale, and for the same reason: both are paid out of
+	// the §136 UNLOCKED tranche, so both are liquid at genesis and neither
+	// carries a §132 schedule.
+	if *investors != "" {
+		if err := readPublicSale(*investors, totals); err != nil {
+			return err
+		}
 	}
 	if *publicsale != "" {
 		if err := readPublicSale(*publicsale, totals); err != nil {

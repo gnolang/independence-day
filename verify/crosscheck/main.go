@@ -263,6 +263,10 @@ func main() {
 			{"../../mkgenesis/balances.txt.gz", parseGnoBalance},
 			{"../../mkgenesis/non-airdrop.txt", parseGnoBalance},
 			{"../../mkgenesis/publicsale.txt", parseGnoBalance},
+			// investors.txt is merged into balances.txt.gz exactly like the sale
+			// sheet, so it has to be on this side of the comparison too. A sheet
+			// that is merged but not cross-checked passes silently.
+			{"../../mkgenesis/investors.txt", parseGnoBalance},
 			{"../../allocate/genbalance.txt.gz", parseConsolidateLine},
 		}
 		balanceFiles = make([]*balanceFile, 0, len(parsers))
@@ -284,16 +288,38 @@ func main() {
 		balanceFiles = append(balanceFiles, balanceFile)
 	}
 
+	// By name, not by index. This used to be balanceFiles[1..3] and adding a
+	// fourth sheet silently shifted genbalance from [3] to [4], so the check
+	// compared the wrong pair and reported every address as missing.
+	byName := make(map[string]*balanceFile, len(balanceFiles))
+	for i, p := range parsers {
+		byName[p.filename] = balanceFiles[i]
+	}
+	must := func(name string) *balanceFile {
+		bf, ok := byName[name]
+		if !ok {
+			fmt.Fprintf(os.Stderr, "internal error: %s was not parsed\n", name)
+			os.Exit(1)
+		}
+		return bf
+	}
+
 	// Rebuild what mkgenesis should have produced: the computed airdrop, plus
-	// the two hand-written sheets that are merged into it. Keep this in step
-	// with runBuild's inputs — a sheet that is merged but not added here shows
-	// up as a whole-file difference, which is the intended failure.
-	fmt.Println("Adding non-airdrop and public-sale to consolidate balance file")
-	balanceFiles[3].addBalances(balanceFiles[1])
-	balanceFiles[3].addBalances(balanceFiles[2])
+	// every hand-written sheet merged into it. Keep this in step with runBuild's
+	// inputs — a sheet that is merged but not added here shows up as a whole-file
+	// difference, which is the intended failure.
+	fmt.Println("Adding non-airdrop, public-sale and investor distributions to consolidate balance file")
+	consolidated := must("../../allocate/genbalance.txt.gz")
+	for _, sheet := range []string{
+		"../../mkgenesis/non-airdrop.txt",
+		"../../mkgenesis/publicsale.txt",
+		"../../mkgenesis/investors.txt",
+	} {
+		consolidated.addBalances(must(sheet))
+	}
 
 	// Compare mkgenesis balance file with the consolidate balance file.
-	if balanceFiles[0].compare(balanceFiles[3]) {
+	if must("../../mkgenesis/balances.txt.gz").compare(consolidated) {
 		fmt.Fprintln(os.Stderr, "Balance files DIFFER.")
 		os.Exit(1)
 	}
