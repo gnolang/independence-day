@@ -172,7 +172,7 @@ const (
 	// their tokens are contractually lockup-free — so the sale is not an eighth
 	// bucket, it is the part of the §136 tranche that is already spoken for by
 	// name. Total supply does not move; INVESTORS_UNLOCKED_ADDRESS holds the
-	// tranche NET of it and the rest is written to the 68 rows in
+	// tranche NET of it and the rest is written to the 79 rows in
 	// mkgenesis/publicsale.txt.
 	//
 	// This one is in ugnot, not GNOT, and cannot be anything else: a sale

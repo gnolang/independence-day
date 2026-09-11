@@ -3,14 +3,15 @@
 > `README.md` in this directory is **generated** by `go run . readme`. Do not hand-edit it. This file is
 > the hand-written explanation; `README.md` is the machine-written report.
 
-This is the last stage of the pipeline. It merges the computed airdrop with the two hand-written sheets
-and produces the file that a chain's genesis builder actually downloads.
+This is the last stage of the pipeline. It merges the computed airdrop with the three hand-written
+sheets and produces the file that a chain's genesis builder actually downloads.
 
 ```
 ../allocate/genbalance.txt.gz   3,262,351 rows   (computed)
 + non-airdrop.txt                      75 rows / 66 addresses   (hand-written, mostly 2022)
-+ publicsale.txt                       68 rows / 68 addresses   (hand-written, the Sonar sale)
-= balances.txt.gz               3,262,454 rows
++ publicsale.txt                       79 rows / 79 addresses   (hand-written, the Sonar sale)
++ investors.txt                         9 rows /  9 addresses   (hand-written, §136 distributions)
+= balances.txt.gz               3,262,473 rows
 ```
 
 The rows do not add up to the output because **this stage sums duplicates**, and three different kinds
@@ -20,12 +21,13 @@ of duplicate occur:
 |---|---:|---|
 | within `non-airdrop.txt` | 9 | a multisig signer with both a gas float and a contributor-airdrop row |
 | `non-airdrop.txt` ∩ airdrop | 6 | 2022 contributors and founders who also hold a snapshot entitlement |
-| `publicsale.txt` ∩ airdrop | 25 | sale participants who also hold a snapshot entitlement |
+| `publicsale.txt` ∩ airdrop | 26 | sale participants who also hold a snapshot entitlement |
 | `non-airdrop.txt` ∩ `publicsale.txt` | 0 | |
+| `investors.txt` ∩ anything | 0 | fresh addresses; the nine are counterparty-controlled, not participants |
 
-3,262,351 + (66 − 6) + (68 − 25) = **3,262,454**.
+3,262,351 + (66 − 6) + (79 − 26) + 9 = **3,262,473**.
 
-The 25 are expected rather than surprising: the sale audience overlaps the Cosmos Hub / AtomOne one,
+The 26 are expected rather than surprising: the sale audience overlaps the Cosmos Hub / AtomOne one,
 and a gno address is the same 20-byte key as the cosmos address it derives from. They are pinned by
 `TestPublicSaleOverlapIsSummed` because nothing in the output shows that a row is a sum.
 
@@ -33,11 +35,12 @@ Note that **this stage sums duplicates**, whereas the consuming side (`gnogenesi
 `LeftMerge`) is last-write-wins and would silently drop one of the two. Any address that ends up both in
 this sheet and in a genesis transaction on the consuming side is a live hazard.
 
-## The public sale sheet
+## The two §136 sheets
 
-`publicsale.txt` is the only sheet whose rows may carry their own `;vesting=…` suffix, and the only one
-whose rows are marked liquid at genesis. Both facts are consumed by `vesting.go`; read the header of
-the sheet itself before editing it.
+`publicsale.txt` is the only sheet whose rows may carry their own `;vesting=…` suffix. It is not the
+only one marked liquid at genesis: `investors.txt` is read by the same loader and for the same reason
+— both are carve-outs of the §136 **unlocked** tranche, so neither carries a §132 schedule. Both facts
+are consumed by `vesting.go`; read the header of the sheet itself before editing either.
 
 ## The non-airdrop premine
 

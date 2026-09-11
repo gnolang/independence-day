@@ -118,7 +118,7 @@ func TestSplitPreservesTheAggregate(t *testing.T) {
 	assert.Equal(t, 150000000, TOTAL_INVESTORS_UNLOCKED)
 
 	// The sale AND the investor distributions are carved OUT of the §136 tranche,
-	// not added beside it: what INVESTORS_UNLOCKED_ADDRESS receives, plus the 68
+	// not added beside it: what INVESTORS_UNLOCKED_ADDRESS receives, plus the 79
 	// sale rows, plus the 9 distribution rows, is still exactly 150,000,000 GNOT.
 	assert.Equal(t, int64(TOTAL_INVESTORS_UNLOCKED)*1000000,
 		int64(TOTAL_INVESTORS_UNLOCKED_UGNOT)+
@@ -144,14 +144,14 @@ func TestPublicSaleMatchesFile(t *testing.T) {
 
 	assert.Equal(t, int64(TOTAL_PUBLIC_SALE_UGNOT), sum,
 		"TOTAL_PUBLIC_SALE_UGNOT is out of date with %s", publicSaleFile)
-	assert.Len(t, rows, 68,
-		"67 participants who named an address, plus the [sale-unclaimed] multisig row")
+	assert.Len(t, rows, 79,
+		"78 participants who named an address, plus the [sale-unclaimed] multisig row")
 
-	// The multisig row is what the 55 unbound participants are owed. Losing it
+	// The multisig row is what the 44 unbound participants are owed. Losing it
 	// does not fail anything — those tokens are simply never minted and the
 	// supply comes up short — so it is asserted by address here.
 	const saleUnclaimed = "g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0"
-	assert.Equal(t, int64(9338399590158), rows[saleUnclaimed],
+	assert.Equal(t, int64(5083156628919), rows[saleUnclaimed],
 		"the [sale-unclaimed] holding row must be present and unchanged")
 }
 
@@ -235,7 +235,7 @@ func TestPublicSaleRowsAreWellFormed(t *testing.T) {
 	}
 }
 
-// TestPublicSaleOverlapIsSummed pins the 25 addresses that hold BOTH a sale
+// TestPublicSaleOverlapIsSummed pins the 26 addresses that hold BOTH a sale
 // entitlement and an airdrop one.
 //
 // This is expected and the sum is the intended treatment — the airdrop is for
@@ -277,10 +277,10 @@ func TestPublicSaleOverlapIsSummed(t *testing.T) {
 	}
 	require.NoError(t, sc.Err())
 
-	assert.Equal(t, 25, overlap,
+	assert.Equal(t, 26, overlap,
 		"the number of sale participants who also hold an airdrop entitlement changed")
-	assert.Equal(t, int64(315720117148), airdrop,
-		"the airdrop held by those 25 changed")
+	assert.Equal(t, int64(675669367465), airdrop,
+		"the airdrop held by those 26 changed")
 	t.Logf("%d addresses hold both: %d ugnot of airdrop + %d ugnot of sale", overlap, airdrop, saleSide)
 }
 

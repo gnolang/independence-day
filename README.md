@@ -38,7 +38,7 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 |---|---:|---|
 | ATOM airdrop | 350,000,000 | Cosmos Hub ATOM holders, snapshot block 10562840 (2022-05-20 08:00 PDT) |
 | AtomOne airdrop | 231,000,000 | AtomOne ATONE/PHOTON holders, snapshot block 6439117 |
-| Investors — unlocked at launch (§136) | 150,000,000 | 128,395,312.569897 to `g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76` — no vesting schedule — and 21,604,687.430103 to the public sale, below |
+| Investors — unlocked at launch (§136) | 150,000,000 | 112,318,842.569897 to `g1j3et7juxr3npgdll3lml3mpv0y6m49rztjnf76` — no vesting schedule — plus 21,604,687.430103 to the public sale and 16,076,470 to the investor and partner distributions, both below |
 | Investors — vesting (§132) | 150,000,000 | `g1x7tm26g9wj84cmg3cs74uwf3g9lqj4mjp6gax3` |
 | NT,LLC (§124) | 332,000,000 | `g1pku9u3jwr8k8vjpfypqzd0uhmrwr35zk0f8u7p` |
 | Core Treasury (§120) | 39,994,000 | `g1shmvjxkvx9kgnrta5rzwcpdqszy4pkfvv9qjz9`; 40,000,000 less the founders |
@@ -57,10 +57,10 @@ in the `const` block at the top. They are the *only* place a bucket size is defi
 ### Unrestricted addresses (§126)
 
 At genesis `$GNOT` is globally non-transferable, and §126 requires an exemption list.
-[`mkgenesis/unrestricted.txt`](mkgenesis/unrestricted.txt) is it — **71 addresses**, generated: the
-three funds §127 names (Ecosystem, and both Investors tranches) plus every row of `publicsale.txt`.
-It is derived rather than hand-written so a participant who binds an address cannot end up in the
-genesis but off the exemption list.
+[`mkgenesis/unrestricted.txt`](mkgenesis/unrestricted.txt) is it — **91 addresses**, generated: the
+three funds §127 names (Ecosystem, and both Investors tranches) plus every row of `publicsale.txt`
+and `investors.txt`. It is derived rather than hand-written so a participant who binds an address
+cannot end up in the genesis but off the exemption list.
 
 **Whitelisting is not unlocking.** §129 — *"Whitelisted funds remain subject to the vesting schedule
 below"* — so the investors-vesting tranche is on the list *and* keeps its §132 schedule.
@@ -68,19 +68,22 @@ below"* — so the investors-vesting tranche is on the list *and* keeps its §13
 NT,LLC, the Core and Validator Services treasuries and nt2 are deliberately **absent**; each needs a
 ruling rather than a default. See the header of the file.
 
-Three things are *not* separate buckets and surprise people:
+Four things are *not* separate buckets and surprise people:
 
 - **The public token sale** is a **carve-out of the §136 unlocked tranche**, not an eighth bucket. The
   Sonar sale settled 122 wallets for 21,604,687.430103 GNOT; buyers are investors and their tokens are
   contractually lockup-free, so the sale is simply the part of that 150,000,000 which is already owed
-  to named people. It comes *out of* the tranche, which is why the row above reads 128,395,312.569897
-  rather than 150,000,000. The 67 wallets that had named a gno.land address by the snapshot are paid
-  directly; the other 55 are paid to a 2-of-4 multisig
+  to named people. It comes *out of* the tranche, which is why the row above reads 112,318,842.569897
+  rather than 150,000,000. The 78 wallets that had named a gno.land address by the snapshot are paid
+  directly; the other 44 are paid to a 2-of-4 multisig
   (`g1rphzpk58kn0nqpgu8k8apaq2ftzgpsgql8wjr0`) and distributed by hand as they come forward. See
   [`mkgenesis/publicsale.txt`](mkgenesis/publicsale.txt) and
   [`inputs/README-publicsale-provenance.md`](inputs/README-publicsale-provenance.md).
-
-
+- **The investor and partner distributions** are the *second* carve-out of that same tranche, by the
+  same reasoning: 16,076,470 GNOT across 9 rows already owed to counterparties. The counterparties are
+  deliberately not named anywhere in this repository — the rows carry opaque labels, are ordered by
+  address, and a test asserts that shape rather than a blocklist of names. See
+  [`mkgenesis/investors.txt`](mkgenesis/investors.txt).
 - **nt2 (`g1sp27hn785v3kud6cg9dnhrng7wzp9cnljffhcg`)** is a **sweep, not an allocation**. The AiB
   addresses listed in `aibCosmosAddrs` / `aibAtoneAddrs` are removed from the airdrop and their combined
   entitlement is re-added under nt2. That GNOT comes *out of* the 350M + 231M, not on top.
