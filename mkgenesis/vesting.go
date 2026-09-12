@@ -49,8 +49,8 @@ import (
 // builder pins the same instant in misc/deployments/mainnet.gno.land; if the two
 // disagree the schedule starts on the wrong day.
 const (
-	genesisVestingStart = 1789214400 // 2026-09-12T12:00:00Z — genesis (the ceremony time)
-	genesisVestingEnd   = 1852372800 // 2028-09-12T12:00:00Z — 24 calendar months later
+	genesisVestingStart = 1789225200 // 2026-09-12T15:00:00Z — genesis (the ceremony time)
+	genesisVestingEnd   = 1852383600 // 2028-09-12T15:00:00Z — 24 calendar months later
 )
 
 // genesisVestingExempt is the §136 tranche — "150,000,000 tokens from the
